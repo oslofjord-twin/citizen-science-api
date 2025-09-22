@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import * as dotenv from "dotenv";
 import { auth } from "./auth.js";
 import { toNodeHandler } from "better-auth/node";
@@ -8,6 +9,10 @@ import dataTypeRoutes from "./routes/dataTypes.js";
 dotenv.config();
 
 const app = express();
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(express.json());
 
 // Better Auth routes
@@ -23,6 +28,6 @@ app.get("/health", (req, res) => {
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Better Auth server running on port ${port}`);
 });
