@@ -4,7 +4,6 @@ import * as dotenv from "dotenv";
 import { auth } from "./auth.js";
 import { toNodeHandler } from "better-auth/node";
 import measurementRoutes from "./routes/measurements.js";
-import dataTypeRoutes from "./routes/dataTypes.js";
 
 dotenv.config();
 
@@ -20,10 +19,9 @@ app.use(cors({
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use(express.json());
 
-
 // API routes
 app.use("/api", measurementRoutes);
-app.use("/api", dataTypeRoutes);
+// Remove dataTypeRoutes since we're not using it anymore
 
 // Health check
 app.get("/health", (req, res) => {

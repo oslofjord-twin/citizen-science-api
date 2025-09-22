@@ -1,61 +1,91 @@
-import { pool } from "../config/database.js";
+import { pool } from "../config/database";
+import { v4 as uuidv4 } from 'uuid';
 
-export interface CreateMeasurementData {
+export interface CreateTemperatureMeasurementData {
   userId: string;
-  data_type_id: number;
-  value: number;
+  value_celsius: number;
+  depth_meters?: number;
+  instrument_type?: string;
+  location_id: string;
   measurement_date: string;
-  latitude: number;
-  longitude: number;
   notes?: string;
 }
 
 export interface MeasurementFilters {
-  data_type_id?: number;
+  data_type?: string;
+  location_id?: string;
   limit: number;
   offset: number;
   start_date?: string;
   end_date?: string;
 }
 
-export const createMeasurement = async (data: CreateMeasurementData) => {
-  // Verify that the data_type_id exists
-  const dataTypeCheck = await pool.query(
-    'SELECT id FROM data_types WHERE id = $1',
-    [data.data_type_id]
-  );
+export const createTemperatureMeasurement = async (data: CreateTemperatureMeasurementData) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
 
-  if (dataTypeCheck.rows.length === 0) {
-    throw new Error('Invalid data_type_id');
+    // Generate IDs
+    const temperatureId = uuidv4();
+    const measurementId = uuidv4();
+
+    // Insert temperature data first
+    const temperatureResult = await client.query(
+      `INSERT INTO temperature_data (id, value_celsius, depth_meters, instrument_type, notes) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING *`,
+      [temperatureId, data.value_celsius, data.depth_meters || null, data.instrument_type || null, data.notes || null]
+    );
+
+    // Insert measurement reference
+    const measurementResult = await client.query(
+      `INSERT INTO measurements (id, location_id, timestamp, data_type, data_id, user_id, notes) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       RETURNING *`,
+      [measurementId, data.location_id, data.measurement_date, 'temperature', temperatureId, data.userId, data.notes || null]
+    );
+
+    await client.query('COMMIT');
+
+    // Return combined data
+    return {
+      id: measurementResult.rows[0].id,
+      location_id: measurementResult.rows[0].location_id,
+      timestamp: measurementResult.rows[0].timestamp,
+      data_type: measurementResult.rows[0].data_type,
+      user_id: measurementResult.rows[0].user_id,
+      notes: measurementResult.rows[0].notes,
+      created_at: measurementResult.rows[0].created_at,
+      temperature_data: temperatureResult.rows[0]
+    };
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  // Insert the measurement
-  const result = await pool.query(
-    `INSERT INTO measurements (user_id, data_type_id, value, measurement_date, latitude, longitude, notes) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7) 
-     RETURNING *`,
-    [data.userId, data.data_type_id, data.value, data.measurement_date, data.latitude, data.longitude, data.notes || null]
-  );
-
-  return result.rows[0];
 };
 
 export const getMeasurements = async (userId: string, filters: MeasurementFilters) => {
   let query = `
     SELECT 
       m.id,
-      m.value,
-      m.measurement_date,
-      m.latitude,
-      m.longitude,
-      m.notes,
+      m.location_id,
+      m.timestamp,
+      m.data_type,
+      m.user_id,
+      m.notes as measurement_notes,
+      m.quality_flag,
       m.created_at,
       m.updated_at,
-      dt.name as data_type_name,
-      dt.display_name as data_type_display_name,
-      dt.unit as data_type_unit
+      td.value_celsius,
+      td.depth_meters,
+      td.instrument_type,
+      td.notes as temperature_notes
     FROM measurements m
-    JOIN data_types dt ON m.data_type_id = dt.id
+    LEFT JOIN temperature_data td ON m.data_id = td.id AND m.data_type = 'temperature'
     WHERE m.user_id = $1
   `;
   
@@ -63,27 +93,34 @@ export const getMeasurements = async (userId: string, filters: MeasurementFilter
   let paramIndex = 2;
 
   // Filter by data type if specified
-  if (filters.data_type_id) {
-    query += ` AND m.data_type_id = $${paramIndex}`;
-    queryParams.push(filters.data_type_id);
+  if (filters.data_type) {
+    query += ` AND m.data_type = $${paramIndex}`;
+    queryParams.push(filters.data_type);
+    paramIndex++;
+  }
+
+  // Filter by location if specified
+  if (filters.location_id) {
+    query += ` AND m.location_id = $${paramIndex}`;
+    queryParams.push(filters.location_id);
     paramIndex++;
   }
 
   // Filter by date range if specified
   if (filters.start_date) {
-    query += ` AND m.measurement_date >= $${paramIndex}`;
+    query += ` AND m.timestamp >= $${paramIndex}`;
     queryParams.push(filters.start_date);
     paramIndex++;
   }
 
   if (filters.end_date) {
-    query += ` AND m.measurement_date <= $${paramIndex}`;
+    query += ` AND m.timestamp <= $${paramIndex}`;
     queryParams.push(filters.end_date);
     paramIndex++;
   }
 
-  // Order by measurement date (newest first) and add pagination
-  query += ` ORDER BY m.measurement_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+  // Order by timestamp (newest first) and add pagination
+  query += ` ORDER BY m.timestamp DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   queryParams.push(filters.limit, filters.offset);
 
   const result = await pool.query(query, queryParams);
@@ -111,20 +148,26 @@ const getTotalCount = async (userId: string, filters: MeasurementFilters): Promi
   const countParams: any[] = [userId];
   let countParamIndex = 2;
 
-  if (filters.data_type_id) {
-    countQuery += ` AND m.data_type_id = $${countParamIndex}`;
-    countParams.push(filters.data_type_id);
+  if (filters.data_type) {
+    countQuery += ` AND m.data_type = $${countParamIndex}`;
+    countParams.push(filters.data_type);
+    countParamIndex++;
+  }
+
+  if (filters.location_id) {
+    countQuery += ` AND m.location_id = $${countParamIndex}`;
+    countParams.push(filters.location_id);
     countParamIndex++;
   }
 
   if (filters.start_date) {
-    countQuery += ` AND m.measurement_date >= $${countParamIndex}`;
+    countQuery += ` AND m.timestamp >= $${countParamIndex}`;
     countParams.push(filters.start_date);
     countParamIndex++;
   }
 
   if (filters.end_date) {
-    countQuery += ` AND m.measurement_date <= $${countParamIndex}`;
+    countQuery += ` AND m.timestamp <= $${countParamIndex}`;
     countParams.push(filters.end_date);
   }
 

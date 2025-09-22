@@ -1,44 +1,42 @@
 import { Request, Response } from "express";
-import { AuthenticatedRequest } from "../middleware/auth.js";
-import * as measurementService from "../services/measurementService.js";
+import { AuthenticatedRequest } from "../middleware/auth";
+import * as measurementService from "../services/measurementService";
 
-export const createMeasurement = async (req: Request, res: Response): Promise<void> => {
+export const createTemperatureMeasurement = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { data_type_id, value, measurement_date, latitude, longitude, notes } = req.body;
+    const { value_celsius, depth_meters, instrument_type, location_id, measurement_date, notes } = req.body;
     const userId = (req as AuthenticatedRequest).user.id;
 
     // Validate required fields
-    if (!data_type_id || !value || !measurement_date || latitude === undefined || longitude === undefined) {
+    if (!value_celsius || !location_id || !measurement_date) {
       res.status(400).json({ 
-        error: 'Missing required fields: data_type_id, value, measurement_date, latitude, longitude' 
+        error: 'Missing required fields: value_celsius, location_id, measurement_date' 
       });
       return;
     }
 
     // Validate data types
-    if (typeof data_type_id !== 'number' || typeof value !== 'number') {
+    if (typeof value_celsius !== 'number') {
       res.status(400).json({ 
-        error: 'Invalid data types: data_type_id and value must be numbers' 
+        error: 'Invalid data types: value_celsius must be a number' 
       });
       return;
     }
 
-    // Validate coordinates
-    if (typeof latitude !== 'number' || typeof longitude !== 'number' || 
-        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    if (depth_meters !== undefined && typeof depth_meters !== 'number') {
       res.status(400).json({ 
-        error: 'Invalid coordinates: latitude must be between -90 and 90, longitude between -180 and 180' 
+        error: 'Invalid data type: depth_meters must be a number if provided' 
       });
       return;
     }
 
-    const measurement = await measurementService.createMeasurement({
+    const measurement = await measurementService.createTemperatureMeasurement({
       userId,
-      data_type_id,
-      value,
+      value_celsius,
+      depth_meters,
+      instrument_type,
+      location_id,
       measurement_date,
-      latitude,
-      longitude,
       notes
     });
 
@@ -48,11 +46,7 @@ export const createMeasurement = async (req: Request, res: Response): Promise<vo
     });
 
   } catch (error) {
-    console.error('Error creating measurement:', error);
-    if (error instanceof Error && error.message === 'Invalid data_type_id') {
-      res.status(400).json({ error: 'Invalid data_type_id' });
-      return;
-    }
+    console.error('Error creating temperature measurement:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -60,10 +54,11 @@ export const createMeasurement = async (req: Request, res: Response): Promise<vo
 export const getMeasurements = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = (req as AuthenticatedRequest).user.id;
-    const { data_type_id, limit = 100, offset = 0, start_date, end_date } = req.query;
+    const { data_type, location_id, limit = 100, offset = 0, start_date, end_date } = req.query;
 
     const filters = {
-      data_type_id: data_type_id ? parseInt(data_type_id as string) : undefined,
+      data_type: data_type as string,
+      location_id: location_id as string,
       limit: parseInt(limit as string),
       offset: parseInt(offset as string),
       start_date: start_date as string,

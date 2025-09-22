@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { authenticateUser } from "../middleware/auth.js";
-import * as measurementController from "../controllers/measurementController.js";
+import { authenticateUser } from "../middleware/auth";
+import * as measurementController from "../controllers/measurementController";
 
 const router = Router();
 
-router.post("/measurements", authenticateUser, measurementController.createMeasurement);
+router.post("/measurements/temperature", authenticateUser, measurementController.createTemperatureMeasurement);
 router.get("/measurements", authenticateUser, measurementController.getMeasurements);
 
 export default router;
