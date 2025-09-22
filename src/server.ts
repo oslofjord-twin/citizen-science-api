@@ -28,6 +28,6 @@ app.get("/health", (req, res) => {
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, '0.0.0.0', () => {
+app.listen(port, () => {
   console.log(`Better Auth server running on port ${port}`);
 });
