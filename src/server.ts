@@ -13,11 +13,12 @@ app.use(cors({
   origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Better-Auth-Token']
 }));
 
 // Better Auth routes
 app.all("/api/auth/{*any}", toNodeHandler(auth));
+app.use(express.json());
 
 
 // API routes
@@ -28,8 +29,6 @@ app.use("/api", dataTypeRoutes);
 app.get("/health", (req, res) => {
   res.send("OK");
 });
-
-app.use(express.json());
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

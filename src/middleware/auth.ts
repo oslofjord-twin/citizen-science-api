@@ -25,6 +25,13 @@ export const authenticateUser = async (
       return;
     }
 
+    if (!session.user) {
+      res.status(401).json({ 
+        error: 'Invalid session - no user data'
+      });
+      return;
+    }
+
     (req as AuthenticatedRequest).user = session.user;
     next();
   } catch (error) {

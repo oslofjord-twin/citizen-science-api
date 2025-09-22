@@ -20,7 +20,9 @@ export const auth = betterAuth({
       minUsernameLength: 3,
       maxUsernameLength: 30,
     }),
-    expo(),
+    expo({
+      scheme: "citizenscienceapp",
+    }),
   ],
   appName: "CitizenScienceApp",
   baseURL: process.env.BASE_URL!,
