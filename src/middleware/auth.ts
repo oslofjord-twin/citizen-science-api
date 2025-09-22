@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import { auth } from "../auth.js";
+import { fromNodeHeaders } from "better-auth/node";
 
 export interface AuthenticatedRequest extends Request {
   user: {
@@ -10,13 +11,13 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export const authenticateUser = async (
-  req: Request, 
-  res: Response, 
+  req: Request,
+  res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
     const session = await auth.api.getSession({
-  	  headers: req.headers,
+      headers: fromNodeHeaders(req.headers),
     });
 
     if (!session) {
