@@ -6,14 +6,16 @@ export interface CreateTemperatureMeasurementData {
   value_celsius: number;
   depth_meters?: number;
   instrument_type?: string;
-  location_id: string;
+  latitude: number;
+  longitude: number;
   measurement_date: string;
   notes?: string;
 }
 
 export interface MeasurementFilters {
   data_type?: string;
-  location_id?: string;
+  latitude?: number;
+  longitude?: number;
   limit: number;
   offset: number;
   start_date?: string;
@@ -40,10 +42,10 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
 
     // Insert measurement reference
     const measurementResult = await client.query(
-      `INSERT INTO measurements (id, location_id, timestamp, data_type, data_id, user_id, notes) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      `INSERT INTO measurements (id, latitude, longitude, timestamp, data_type, data_id, user_id, notes) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
-      [measurementId, data.location_id, data.measurement_date, 'temperature', temperatureId, data.userId, data.notes || null]
+      [measurementId, data.latitude, data.longitude, data.measurement_date, 'temperature', temperatureId, data.userId, data.notes || null]
     );
 
     await client.query('COMMIT');
@@ -51,7 +53,8 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
     // Return combined data
     return {
       id: measurementResult.rows[0].id,
-      location_id: measurementResult.rows[0].location_id,
+      latitude: measurementResult.rows[0].latitude,
+      longitude: measurementResult.rows[0].longitude,
       timestamp: measurementResult.rows[0].timestamp,
       data_type: measurementResult.rows[0].data_type,
       user_id: measurementResult.rows[0].user_id,
@@ -72,7 +75,8 @@ export const getMeasurements = async (userId: string, filters: MeasurementFilter
   let query = `
     SELECT 
       m.id,
-      m.location_id,
+      m.latitude,
+      m.longitude,
       m.timestamp,
       m.data_type,
       m.user_id,
@@ -96,13 +100,6 @@ export const getMeasurements = async (userId: string, filters: MeasurementFilter
   if (filters.data_type) {
     query += ` AND m.data_type = $${paramIndex}`;
     queryParams.push(filters.data_type);
-    paramIndex++;
-  }
-
-  // Filter by location if specified
-  if (filters.location_id) {
-    query += ` AND m.location_id = $${paramIndex}`;
-    queryParams.push(filters.location_id);
     paramIndex++;
   }
 
@@ -151,12 +148,6 @@ const getTotalCount = async (userId: string, filters: MeasurementFilters): Promi
   if (filters.data_type) {
     countQuery += ` AND m.data_type = $${countParamIndex}`;
     countParams.push(filters.data_type);
-    countParamIndex++;
-  }
-
-  if (filters.location_id) {
-    countQuery += ` AND m.location_id = $${countParamIndex}`;
-    countParams.push(filters.location_id);
     countParamIndex++;
   }
 

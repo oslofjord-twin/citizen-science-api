@@ -4,13 +4,13 @@ import * as measurementService from "../services/measurementService";
 
 export const createTemperatureMeasurement = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { value_celsius, depth_meters, instrument_type, location_id, measurement_date, notes } = req.body;
+    const { value_celsius, depth_meters, instrument_type, latitude, longitude, measurement_date, notes } = req.body;
     const userId = (req as AuthenticatedRequest).user.id;
 
     // Validate required fields
-    if (!value_celsius || !location_id || !measurement_date) {
+    if (!value_celsius || !latitude || !longitude || !measurement_date) {
       res.status(400).json({ 
-        error: 'Missing required fields: value_celsius, location_id, measurement_date' 
+        error: 'Missing required fields: value_celsius, latitude, longitude, measurement_date' 
       });
       return;
     }
@@ -19,6 +19,15 @@ export const createTemperatureMeasurement = async (req: Request, res: Response):
     if (typeof value_celsius !== 'number') {
       res.status(400).json({ 
         error: 'Invalid data types: value_celsius must be a number' 
+      });
+      return;
+    }
+
+    // Validate coordinates
+    if (typeof latitude !== 'number' || typeof longitude !== 'number' || 
+        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      res.status(400).json({ 
+        error: 'Invalid coordinates: latitude must be between -90 and 90, longitude between -180 and 180' 
       });
       return;
     }
@@ -35,7 +44,8 @@ export const createTemperatureMeasurement = async (req: Request, res: Response):
       value_celsius,
       depth_meters,
       instrument_type,
-      location_id,
+      latitude,
+      longitude,
       measurement_date,
       notes
     });
@@ -54,11 +64,13 @@ export const createTemperatureMeasurement = async (req: Request, res: Response):
 export const getMeasurements = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = (req as AuthenticatedRequest).user.id;
-    const { data_type, location_id, limit = 100, offset = 0, start_date, end_date } = req.query;
+    const { data_type, latitude, longitude, radius_km, limit = 100, offset = 0, start_date, end_date } = req.query;
 
     const filters = {
       data_type: data_type as string,
-      location_id: location_id as string,
+      latitude: latitude ? parseFloat(latitude as string) : undefined,
+      longitude: longitude ? parseFloat(longitude as string) : undefined,
+      radius_km: radius_km ? parseFloat(radius_km as string) : undefined,
       limit: parseInt(limit as string),
       offset: parseInt(offset as string),
       start_date: start_date as string,
