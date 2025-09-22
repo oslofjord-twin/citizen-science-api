@@ -21,7 +21,6 @@ app.use(express.json());
 
 // API routes
 app.use("/api", measurementRoutes);
-// Remove dataTypeRoutes since we're not using it anymore
 
 // Health check
 app.get("/health", (req, res) => {
