@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { AuthenticatedRequest } from "../middleware/auth";
-import * as measurementService from "../services/measurementService";
+import { AuthenticatedRequest } from "../middleware/auth.js";
+import * as measurementService from "../services/measurementService.js";
 
 export const createTemperatureMeasurement = async (req: Request, res: Response): Promise<void> => {
   try {

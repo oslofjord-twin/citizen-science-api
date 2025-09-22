@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authenticateUser } from "../middleware/auth";
-import * as measurementController from "../controllers/measurementController";
+import { authenticateUser } from "../middleware/auth.js";
+import * as measurementController from "../controllers/measurementController.js";
 
 const router = Router();
 
