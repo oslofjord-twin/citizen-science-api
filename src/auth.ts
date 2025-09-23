@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { betterAuth } from "better-auth";
-import { username } from "better-auth/plugins";
+import { username, openAPI } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import * as dotenv from "dotenv";
 
@@ -21,6 +21,7 @@ export const auth = betterAuth({
       maxUsernameLength: 30,
     }),
     expo(),
+    openAPI(),
   ],
   appName: "CitizenScienceApp",
   baseURL: process.env.BASE_URL!,
