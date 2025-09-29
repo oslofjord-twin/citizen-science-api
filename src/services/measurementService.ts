@@ -28,29 +28,27 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
   try {
     await client.query('BEGIN');
 
-    // Generate IDs
-    const temperatureId = uuidv4();
-    const measurementId = uuidv4();
+    // Use the same ID for both tables
+    const sharedId = uuidv4();
 
-    // Insert temperature data first
+    // Insert temperature data
     const temperatureResult = await client.query(
       `INSERT INTO temperature_data (id, value_celsius, depth_meters, instrument_type, notes) 
        VALUES ($1, $2, $3, $4, $5) 
        RETURNING *`,
-      [temperatureId, data.value_celsius, data.depth_meters || null, data.instrument_type || null, data.notes || null]
+      [sharedId, data.value_celsius, data.depth_meters || null, data.instrument_type || null, data.notes || null]
     );
 
-    // Insert measurement reference
+    // Insert measurement
     const measurementResult = await client.query(
-      `INSERT INTO measurements (id, latitude, longitude, timestamp, data_type, data_id, user_id, notes) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      `INSERT INTO measurements (id, latitude, longitude, timestamp, data_type, user_id, notes) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING *`,
-      [measurementId, data.latitude, data.longitude, data.measurement_date, 'temperature', temperatureId, data.userId, data.notes || null]
+      [sharedId, data.latitude, data.longitude, data.measurement_date, 'temperature', data.userId, data.notes || null]
     );
 
     await client.query('COMMIT');
 
-    // Return combined data
     return {
       id: measurementResult.rows[0].id,
       latitude: measurementResult.rows[0].latitude,
@@ -89,21 +87,21 @@ export const getMeasurements = async (userId: string, filters: MeasurementFilter
       td.instrument_type,
       td.notes as temperature_notes
     FROM measurements m
-    LEFT JOIN temperature_data td ON m.data_id = td.id AND m.data_type = 'temperature'
+    LEFT JOIN temperature_data td ON m.id = td.id
     WHERE m.user_id = $1
   `;
   
   const queryParams: any[] = [userId];
   let paramIndex = 2;
 
-  // Filter by data type if specified
+  // Filter by data type
   if (filters.data_type) {
     query += ` AND m.data_type = $${paramIndex}`;
     queryParams.push(filters.data_type);
     paramIndex++;
   }
 
-  // Filter by date range if specified
+  // Filter by date range
   if (filters.start_date) {
     query += ` AND m.timestamp >= $${paramIndex}`;
     queryParams.push(filters.start_date);
@@ -116,13 +114,13 @@ export const getMeasurements = async (userId: string, filters: MeasurementFilter
     paramIndex++;
   }
 
-  // Order by timestamp (newest first) and add pagination
+  // Pagination
   query += ` ORDER BY m.timestamp DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   queryParams.push(filters.limit, filters.offset);
 
   const result = await pool.query(query, queryParams);
 
-  // Get total count for pagination
+  // Get total count
   const total = await getTotalCount(userId, filters);
 
   return {
