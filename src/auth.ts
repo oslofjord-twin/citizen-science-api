@@ -23,6 +23,11 @@ export const auth = betterAuth({
     expo(),
     openAPI(),
   ],
+  user: {
+    deleteUser: { 
+      enabled: true
+    } 
+  },
   appName: "CitizenScienceApp",
   baseURL: process.env.BASE_URL!,
   trustedOrigins: [process.env.TRUSTED_ORIGINS!],
