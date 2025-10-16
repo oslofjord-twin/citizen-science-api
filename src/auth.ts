@@ -16,10 +16,6 @@ export const auth = betterAuth({
     autoSignIn: true,
   },
   plugins: [
-    username({
-      minUsernameLength: 3,
-      maxUsernameLength: 30,
-    }),
     expo(),
     openAPI(),
   ],
