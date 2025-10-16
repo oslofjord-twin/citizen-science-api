@@ -52,7 +52,10 @@ export const createTemperatureMeasurement = async (req: Request, res: Response):
 
     res.status(201).json({
       success: true,
-      measurement
+      measurement: measurement,
+      points_earned: measurement.points_earned,
+      total_points: measurement.total_points,
+      level: measurement.level
     });
 
   } catch (error) {

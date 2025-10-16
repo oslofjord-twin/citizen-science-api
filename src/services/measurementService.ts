@@ -1,5 +1,6 @@
 import { pool } from "../config/database.js";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
+import { TemperaturePointsService } from "./temperaturePointsService.js";
 
 export interface CreateTemperatureMeasurementData {
   userId: string;
@@ -30,6 +31,7 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
 
     const sharedId = uuidv4();
 
+    // 1️⃣ Insert measurement (parent)
     const measurementResult = await client.query(
       `
       INSERT INTO measurements (
@@ -49,6 +51,7 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
       ]
     );
 
+    // 2️⃣ Insert temperature_data (child)
     const temperatureResult = await client.query(
       `
       INSERT INTO temperature_data (
@@ -66,6 +69,13 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
       ]
     );
 
+    // 3️⃣ Award points and update user
+    const gamification = await TemperaturePointsService.awardPoints(
+      client,
+      data.userId,
+      data.depth_meters
+    );
+
     await client.query("COMMIT");
 
     return {
@@ -77,6 +87,9 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
       user_id: measurementResult.rows[0].user_id,
       notes: measurementResult.rows[0].notes,
       created_at: measurementResult.rows[0].created_at,
+      points_earned: gamification.pointsEarned,
+      total_points: gamification.totalPoints,
+      level: gamification.newLevel,
       temperature_data: temperatureResult.rows[0],
     };
   } catch (error) {
@@ -112,14 +125,12 @@ export const getMeasurements = async (userId: string, filters: MeasurementFilter
   const queryParams: any[] = [userId];
   let paramIndex = 2;
 
-  // Filter by data type
   if (filters.data_type) {
     query += ` AND m.data_type = $${paramIndex}`;
     queryParams.push(filters.data_type);
     paramIndex++;
   }
 
-  // Filter by date range
   if (filters.start_date) {
     query += ` AND m.timestamp >= $${paramIndex}`;
     queryParams.push(filters.start_date);
@@ -132,13 +143,11 @@ export const getMeasurements = async (userId: string, filters: MeasurementFilter
     paramIndex++;
   }
 
-  // Pagination
   query += ` ORDER BY m.timestamp DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   queryParams.push(filters.limit, filters.offset);
 
   const result = await pool.query(query, queryParams);
 
-  // Get total count
   const total = await getTotalCount(userId, filters);
 
   return {
