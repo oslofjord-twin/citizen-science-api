@@ -1,9 +1,8 @@
 import { Pool } from "pg";
 import { betterAuth } from "better-auth";
-import { username, openAPI } from "better-auth/plugins";
+import { openAPI } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import * as dotenv from "dotenv";
-import type { BetterAuthUser } from "better-auth";
 
 interface AuthUser {
   id?: string;
