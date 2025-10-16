@@ -31,13 +31,20 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
 
     const sharedId = uuidv4();
 
-    // 1️⃣ Insert measurement (parent)
+    // Award points and update user
+    const gamification = await TemperaturePointsService.awardPoints(
+      client,
+      data.userId,
+      data.depth_meters
+    );
+
+    // Insert measurement (parent)
     const measurementResult = await client.query(
       `
       INSERT INTO measurements (
-        id, latitude, longitude, timestamp, data_type, user_id, notes
+        id, latitude, longitude, timestamp, data_type, user_id, notes, points_earned
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *;
       `,
       [
@@ -48,10 +55,11 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
         "temperature",
         data.userId,
         data.notes || null,
+        gamification.pointsEarned
       ]
     );
 
-    // 2️⃣ Insert temperature_data (child)
+    // Insert temperature_data (child)
     const temperatureResult = await client.query(
       `
       INSERT INTO temperature_data (
@@ -67,13 +75,6 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
         data.instrument_type || null,
         data.notes || null,
       ]
-    );
-
-    // 3️⃣ Award points and update user
-    const gamification = await TemperaturePointsService.awardPoints(
-      client,
-      data.userId,
-      data.depth_meters
     );
 
     await client.query("COMMIT");
