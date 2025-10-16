@@ -7,6 +7,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 export const auth = betterAuth({
+  // Database connection
   database: new Pool({
     connectionString: process.env.DATABASE_URL!,
   }),
@@ -27,4 +28,22 @@ export const auth = betterAuth({
   appName: "CitizenScienceApp",
   baseURL: process.env.BASE_URL!,
   trustedOrigins: [process.env.TRUSTED_ORIGINS!],
+
+  events: {
+    async beforeUserCreated(user) {
+      // You can add any backend restrictions here
+      if (!user.name || user.name.trim().length < 3) {
+        throw new Error("Username must be at least 3 characters long.");
+      }
+      if (user.name.length > 20) {
+        throw new Error("Username must be under 20 characters long.");
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(user.name)) {
+        throw new Error("Username may only contain letters, numbers, and underscores.");
+      }
+      if (/^(admin|root|system|test)$/i.test(user.name)) {
+        throw new Error("That username is reserved.");
+      }
+    },
+  },
 });
