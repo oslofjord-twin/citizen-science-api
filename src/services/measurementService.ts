@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 export interface CreateTemperatureMeasurementData {
   userId: string;
   value_celsius: number;
-  depth_meters?: number;
+  depth_meters: number;
   instrument_type?: string;
   latitude: number;
   longitude: number;
@@ -24,30 +24,49 @@ export interface MeasurementFilters {
 
 export const createTemperatureMeasurement = async (data: CreateTemperatureMeasurementData) => {
   const client = await pool.connect();
-  
-  try {
-    await client.query('BEGIN');
 
-    // Use the same ID for both tables
+  try {
+    await client.query("BEGIN");
+
     const sharedId = uuidv4();
 
-    // Insert temperature data
-    const temperatureResult = await client.query(
-      `INSERT INTO temperature_data (id, value_celsius, depth_meters, instrument_type, notes) 
-       VALUES ($1, $2, $3, $4, $5) 
-       RETURNING *`,
-      [sharedId, data.value_celsius, data.depth_meters || null, data.instrument_type || null, data.notes || null]
-    );
-
-    // Insert measurement
     const measurementResult = await client.query(
-      `INSERT INTO measurements (id, latitude, longitude, timestamp, data_type, user_id, notes) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-       RETURNING *`,
-      [sharedId, data.latitude, data.longitude, data.measurement_date, 'temperature', data.userId, data.notes || null]
+      `
+      INSERT INTO measurements (
+        id, latitude, longitude, timestamp, data_type, user_id, notes
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *;
+      `,
+      [
+        sharedId,
+        data.latitude,
+        data.longitude,
+        data.measurement_date,
+        "temperature",
+        data.userId,
+        data.notes || null,
+      ]
     );
 
-    await client.query('COMMIT');
+    const temperatureResult = await client.query(
+      `
+      INSERT INTO temperature_data (
+        id, value_celsius, depth_meters, instrument_type, notes
+      )
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+      `,
+      [
+        sharedId,
+        data.value_celsius,
+        data.depth_meters,
+        data.instrument_type || null,
+        data.notes || null,
+      ]
+    );
+
+    await client.query("COMMIT");
 
     return {
       id: measurementResult.rows[0].id,
@@ -58,11 +77,10 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
       user_id: measurementResult.rows[0].user_id,
       notes: measurementResult.rows[0].notes,
       created_at: measurementResult.rows[0].created_at,
-      temperature_data: temperatureResult.rows[0]
+      temperature_data: temperatureResult.rows[0],
     };
-
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
