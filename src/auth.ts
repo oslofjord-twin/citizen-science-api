@@ -5,6 +5,15 @@ import { expo } from "@better-auth/expo";
 import * as dotenv from "dotenv";
 import type { BetterAuthUser } from "better-auth";
 
+interface AuthUser {
+  id?: string;
+  name: string;
+  email: string;
+  emailVerified?: boolean;
+  image?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 dotenv.config();
 
@@ -32,7 +41,7 @@ export const auth = betterAuth({
   trustedOrigins: [process.env.TRUSTED_ORIGINS!],
 
   events: {
-    async beforeUserCreated(user: BetterAuthUser) {
+    async beforeUserCreated(user: AuthUser) {
       // You can add any backend restrictions here
       if (!user.name || user.name.trim().length < 3) {
         throw new Error("Username must be at least 3 characters long.");
