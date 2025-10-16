@@ -1,3 +1,5 @@
+import type { PoolClient } from "pg";
+
 export const TemperaturePointsService = {
   calculatePoints(depth: number): number {
     const base = 5;
@@ -12,9 +14,8 @@ export const TemperaturePointsService = {
     }
     return level - 1;
   },
-  
 
-  async awardPoints(client, userId: string, depth: number) {
+  async awardPoints(client: PoolClient, userId: string, depth: number) {
     const pointsEarned = this.calculatePoints(depth);
 
     const { rows } = await client.query(
