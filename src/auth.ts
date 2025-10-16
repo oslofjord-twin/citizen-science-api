@@ -26,14 +26,7 @@ export const auth = betterAuth({
   user: {
     deleteUser: { 
       enabled: true
-    },
-    additionalFields: {
-      uniqueName: {
-        type: "string",
-        required: false,
-        unique: true,
-      },
-    },
+    }
   },
   appName: "CitizenScienceApp",
   baseURL: process.env.BASE_URL!,
