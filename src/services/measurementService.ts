@@ -1,6 +1,6 @@
 import { pool } from "../config/database.js";
 import { v4 as uuidv4 } from "uuid";
-import { TemperaturePointsService } from "./temperaturePointsService.js";
+import * as temperaturePointsService from "./temperaturePointsService.js";
 
 export interface CreateTemperatureMeasurementData {
   userId: string;
@@ -32,7 +32,7 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
     const sharedId = uuidv4();
 
     // Award points and update user
-    const gamification = await TemperaturePointsService.awardPoints(
+    const gamification = await temperaturePointsService.awardPoints(
       client,
       data.userId,
       data.depth_meters
