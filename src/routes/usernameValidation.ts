@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as usernameValidationController from "../controllers/usernameValidationController";
+import * as usernameValidationController from "../controllers/usernameValidationController.js";
 
 const router = Router();
 
