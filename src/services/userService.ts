@@ -13,3 +13,14 @@ export const UserService = {
     return result.rows[0];
   },
 };
+
+export const getLeaderboard = async (limit = 10) => {
+  const result = await pool.query(`
+    SELECT name, level, total_points
+    FROM "user"
+    ORDER BY total_points DESC
+    LIMIT $1;
+  `, [limit]);
+
+  return result.rows;
+};
