@@ -20,7 +20,7 @@ app.use(express.json());
 
 // API routes
 app.use("/api", measurementRoutes);
-app.use("api", validateUsernameRoute)
+app.use("/api", validateUsernameRoute)
 
 // Health check
 app.get("/health", (req, res) => {
