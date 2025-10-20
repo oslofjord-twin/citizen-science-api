@@ -2,6 +2,7 @@ import { Pool } from "pg";
 import { betterAuth } from "better-auth";
 import { openAPI } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
+import { createAuthMiddleware, APIError } from "better-auth/api";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -33,31 +34,33 @@ export const auth = betterAuth({
   trustedOrigins: [process.env.TRUSTED_ORIGINS!],
 
   hooks: {
-    async beforeUserCreated(context: any, userData: any) {
-      const { email, name, password } = userData;
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/sign-up/email") {
+        const { name, password, email } = ctx.body || {};
 
-      // Validate username format
-      if (!name || !USERNAME_REGEX.test(name)) {
-        throw new Error(
-          "Username must be 4-20 characters, start with a letter, and contain only letters, numbers, underscores, or periods."
+        if (!name || !USERNAME_REGEX.test(name)) {
+          throw new APIError("BAD_REQUEST", {
+            message:
+              "Username must be 4-20 characters, start with a letter, and contain only letters, numbers, underscores, or periods.",
+          });
+        }
+
+        if (!password || typeof password !== "string" || password.length < 6) {
+          throw new APIError("BAD_REQUEST", {
+            message: "Password must be at least 6 characters long.",
+          });
+        }
+
+        const { rows } = await ctx.db.query(
+          `SELECT 1 FROM "user" WHERE name = $1 OR email = $2 LIMIT 1`,
+          [name, email]
         );
+        if (rows.length > 0) {
+          throw new APIError("BAD_REQUEST", {
+            message: "Username or email is already taken.",
+          });
+        }
       }
-
-      // Validate password
-      if (!password || password.length < 6) {
-        throw new Error("Password must be at least 6 characters long.");
-      }
-
-      // Ensure username and email are unique
-      const existing = await context.db.query(
-        `SELECT 1 FROM "user" WHERE name = $1 OR email = $2 LIMIT 1`,
-        [name, email]
-      );
-      if (existing.rowCount > 0) {
-        throw new Error("Username or email is already taken.");
-      }
-
-      return userData;
-    },
+    }),
   },
 });
