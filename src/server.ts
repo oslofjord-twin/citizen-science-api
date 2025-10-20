@@ -4,7 +4,6 @@ import * as dotenv from "dotenv";
 import { auth } from "./auth.js";
 import { toNodeHandler } from "better-auth/node";
 import measurementRoutes from "./routes/measurements.js";
-import validateUsernameRoute from "./routes/usernameValidation.js";
 
 dotenv.config();
 
@@ -20,7 +19,6 @@ app.use(express.json());
 
 // API routes
 app.use("/api", measurementRoutes);
-app.use("/api", validateUsernameRoute)
 
 // Health check
 app.get("/health", (req, res) => {
