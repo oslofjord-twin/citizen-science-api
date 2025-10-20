@@ -1,9 +1,7 @@
 import { pool } from "../config/database.js";
 import redis from "../redisClient.js";
 
-/**
- * Fetches a user's profile by ID
- */
+// Fetch user profile
 export const getUserProfile = async (userId: string) => {
   const result = await pool.query(
     `
@@ -21,16 +19,14 @@ export const getUserProfile = async (userId: string) => {
 export const getLeaderboard = async (limit = 10) => {
   const cacheKey = `leaderboard:${limit}`;
 
-  // 1️⃣ Check cache first
   const cached = await redis.get(cacheKey);
   if (cached) {
     console.log("⚡ Cache hit");
     return JSON.parse(cached);
   }
 
-  console.log("🗄️ Cache miss — querying database");
+  console.log("Cache miss — querying database");
 
-  // 2️⃣ Query the database
   const result = await pool.query(
     `
     SELECT name, level, total_points
@@ -43,7 +39,7 @@ export const getLeaderboard = async (limit = 10) => {
 
   const rows = result.rows;
 
-  // 3️⃣ Store in Redis with TTL (e.g. 60 seconds)
+  // Store in Redis with TTL - 60s
   await redis.set(cacheKey, JSON.stringify(rows), "EX", 60);
 
   return rows;

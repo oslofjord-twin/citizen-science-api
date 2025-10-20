@@ -27,9 +27,9 @@ export const awardPoints = async (
 
     const { rows } = await client.query(
         `SELECT total_points, level 
-     FROM "user" 
-     WHERE id = $1 
-     FOR UPDATE;`,
+        FROM "user" 
+        WHERE id = $1 
+        FOR UPDATE;`,
         [userId]
     );
 
