@@ -15,7 +15,7 @@ const pool = new Pool({
 
 export const auth = betterAuth({
   database: pool,
-  
+
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
@@ -54,9 +54,16 @@ export const auth = betterAuth({
         }
 
         const { rows } = await pool.query(
-          `SELECT 1 FROM "user" WHERE name = $1 OR email = $2 LIMIT 1`,
+          `
+          SELECT 1
+          FROM "user"
+          WHERE LOWER(name) = LOWER($1)
+             OR LOWER(email) = LOWER($2)
+          LIMIT 1;
+          `,
           [name, email]
         );
+        
         if (rows.length > 0) {
           throw new APIError("BAD_REQUEST", {
             message: "Username or email is already taken.",
