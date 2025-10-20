@@ -4,7 +4,7 @@ import * as measurementController from "../controllers/measurementController.js"
 
 const router = Router();
 
-router.post("/measurements/temperature", authenticateUser, measurementController.createTemperatureMeasurement);
 router.get("/measurements", authenticateUser, measurementController.getMeasurements);
+router.delete('/measurements/:id', authenticateUser, measurementController.deleteMeasurementHandler);
 
 export default router;

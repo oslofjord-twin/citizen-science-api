@@ -1,17 +1,4 @@
 import { pool } from "../config/database.js";
-import { v4 as uuidv4 } from "uuid";
-import * as temperaturePointsService from "./temperaturePointsService.js";
-
-export interface CreateTemperatureMeasurementData {
-  userId: string;
-  value_celsius: number;
-  depth_meters: number;
-  instrument_type?: string;
-  latitude: number;
-  longitude: number;
-  measurement_date: string;
-  notes?: string;
-}
 
 export interface MeasurementFilters {
   data_type?: string;
@@ -22,84 +9,6 @@ export interface MeasurementFilters {
   start_date?: string;
   end_date?: string;
 }
-
-export const createTemperatureMeasurement = async (data: CreateTemperatureMeasurementData) => {
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    const sharedId = uuidv4();
-
-    // Award points and update user
-    const gamification = await temperaturePointsService.awardPoints(
-      client,
-      data.userId,
-      data.depth_meters
-    );
-
-    // Insert measurement (parent)
-    const measurementResult = await client.query(
-      `
-      INSERT INTO measurements (
-        id, latitude, longitude, timestamp, data_type, user_id, notes, points_earned
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *;
-      `,
-      [
-        sharedId,
-        data.latitude,
-        data.longitude,
-        data.measurement_date,
-        "temperature",
-        data.userId,
-        data.notes || null,
-        gamification.pointsEarned
-      ]
-    );
-
-    // Insert temperature_data (child)
-    const temperatureResult = await client.query(
-      `
-      INSERT INTO temperature_data (
-        id, value_celsius, depth_meters, instrument_type, notes
-      )
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *;
-      `,
-      [
-        sharedId,
-        data.value_celsius,
-        data.depth_meters,
-        data.instrument_type || null,
-        data.notes || null,
-      ]
-    );
-
-    await client.query("COMMIT");
-
-    return {
-      id: measurementResult.rows[0].id,
-      latitude: measurementResult.rows[0].latitude,
-      longitude: measurementResult.rows[0].longitude,
-      timestamp: measurementResult.rows[0].timestamp,
-      data_type: measurementResult.rows[0].data_type,
-      user_id: measurementResult.rows[0].user_id,
-      notes: measurementResult.rows[0].notes,
-      created_at: measurementResult.rows[0].created_at,
-      points_earned: gamification.pointsEarned,
-      total_points: gamification.totalPoints,
-      level: gamification.newLevel,
-      temperature_data: temperatureResult.rows[0],
-    };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
-};
 
 export const getMeasurements = async (userId: string, filters: MeasurementFilters) => {
   let query = `
@@ -161,6 +70,46 @@ export const getMeasurements = async (userId: string, filters: MeasurementFilter
       hasMore: filters.offset + filters.limit < total
     }
   };
+};
+
+export const deleteMeasurement = async (userId: string, measurementId: string) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const checkResult = await client.query(
+      `
+      SELECT id FROM measurements
+      WHERE id = $1 AND user_id = $2
+      `,
+      [measurementId, userId]
+    );
+
+    if (checkResult.rowCount === 0) {
+      throw new Error("Measurement not found or access denied.");
+    }
+
+    await client.query(
+      `DELETE FROM temperature_data WHERE id = $1`,
+      [measurementId]
+    );
+
+    await client.query(
+      `DELETE FROM measurements WHERE id = $1`,
+      [measurementId]
+    );
+
+    await client.query("COMMIT");
+
+    return { success: true, message: "Measurement deleted successfully." };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error deleting measurement:", error);
+    throw new Error("Failed to delete measurement.");
+  } finally {
+    client.release();
+  }
 };
 
 const getTotalCount = async (userId: string, filters: MeasurementFilters): Promise<number> => {
