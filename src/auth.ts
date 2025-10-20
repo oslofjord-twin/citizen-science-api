@@ -6,6 +6,8 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
+const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9._]{3,19}$/;
+
 export const auth = betterAuth({
   database: new Pool({
     connectionString: process.env.DATABASE_URL!,
@@ -31,7 +33,7 @@ export const auth = betterAuth({
   trustedOrigins: [process.env.TRUSTED_ORIGINS!],
 
   hooks: {
-    async beforeUserCreated(context, userData) {
+    async beforeUserCreated(context: any, userData: any) {
       const { email, name, password } = userData;
 
       // Validate username format
