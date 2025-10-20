@@ -21,11 +21,11 @@ export const getLeaderboard = async (limit = 10) => {
 
   const cached = await redis.get(cacheKey);
   if (cached) {
-    console.log("⚡ Cache hit");
+    console.log("Cache hit");
     return JSON.parse(cached);
   }
 
-  console.log("Cache miss — querying database");
+  console.log("Cache miss - querying database");
 
   const result = await pool.query(
     `
