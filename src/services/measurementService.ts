@@ -114,6 +114,7 @@ export const getMeasurements = async (userId: string, filters: MeasurementFilter
       m.quality_flag,
       m.created_at,
       m.updated_at,
+      m.points_earned,
       td.value_celsius,
       td.depth_meters,
       td.instrument_type,
