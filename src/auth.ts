@@ -9,11 +9,13 @@ dotenv.config();
 
 const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9._]{3,19}$/;
 
-export const auth = betterAuth({
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL!,
-  }),
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL!,
+});
 
+export const auth = betterAuth({
+  database: pool,
+  
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
@@ -51,7 +53,7 @@ export const auth = betterAuth({
           });
         }
 
-        const { rows } = await ctx.db.query(
+        const { rows } = await pool.query(
           `SELECT 1 FROM "user" WHERE name = $1 OR email = $2 LIMIT 1`,
           [name, email]
         );
