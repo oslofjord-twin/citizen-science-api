@@ -5,6 +5,7 @@ import { auth } from "./auth.js";
 import { toNodeHandler } from "better-auth/node";
 import measurementRoutes from "./routes/measurements.js";
 import temperatureRoutes from "./routes/temperature.js"
+import userRoutes from "./routes/user.js"
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use(express.json());
 // API routes
 app.use("/api", measurementRoutes);
 app.use("/api", temperatureRoutes);
+app.use("/api", userRoutes);
 
 
 // Health check

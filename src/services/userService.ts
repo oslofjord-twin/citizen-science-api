@@ -1,7 +1,6 @@
 import { pool } from "../config/database.js";
 import redis from "../redisClient.js";
 
-// Fetch user profile
 export const getUserProfile = async (userId: string) => {
   const result = await pool.query(
     `
@@ -11,10 +10,8 @@ export const getUserProfile = async (userId: string) => {
     `,
     [userId]
   );
-
   return result.rows[0];
 };
-
 
 export const getLeaderboard = async (limit = 10) => {
   const cacheKey = `leaderboard:${limit}`;
@@ -29,7 +26,7 @@ export const getLeaderboard = async (limit = 10) => {
 
   const result = await pool.query(
     `
-    SELECT name, level, total_points
+    SELECT id, name, level, total_points
     FROM "user"
     ORDER BY total_points DESC
     LIMIT $1;
@@ -39,8 +36,24 @@ export const getLeaderboard = async (limit = 10) => {
 
   const rows = result.rows;
 
-  // Store in Redis with TTL - 60s
   await redis.set(cacheKey, JSON.stringify(rows), "EX", 60);
 
   return rows;
+};
+
+export const getUserRank = async (userId: string) => {
+  const result = await pool.query(
+    `
+    SELECT id, name, level, total_points, rank
+    FROM (
+      SELECT id, name, level, total_points,
+             RANK() OVER (ORDER BY total_points DESC) AS rank
+      FROM "user"
+    ) ranked_users
+    WHERE id = $1;
+    `,
+    [userId]
+  );
+
+  return result.rows[0];
 };
