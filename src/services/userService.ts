@@ -15,31 +15,35 @@ export const getUserProfile = async (userId: string) => {
 
 export const getLeaderboard = async (limit = 10) => {
   const cacheKey = `leaderboard:${limit}`;
-
   const cached = await redis.get(cacheKey);
+
   if (cached) {
     console.log("Cache hit");
+    revalidateLeaderboard(limit, cacheKey);
     return JSON.parse(cached);
   }
 
-  console.log("Cache miss - querying database");
+  console.log("Cache miss - querying DB");
+  const data = await queryLeaderboard(limit);
+  await redis.setex(cacheKey, 60, JSON.stringify(data));
+  return data;
+};
 
+async function revalidateLeaderboard(limit: number, cacheKey: string) {
+  const data = await queryLeaderboard(limit);
+  await redis.setex(cacheKey, 60, JSON.stringify(data));
+}
+
+async function queryLeaderboard(limit: number) {
   const result = await pool.query(
-    `
-    SELECT id, name, level, total_points
-    FROM "user"
-    ORDER BY total_points DESC
-    LIMIT $1;
-    `,
+    `SELECT id, name, level, total_points FROM "user"
+     ORDER BY total_points DESC
+     LIMIT $1;`,
     [limit]
   );
+  return result.rows;
+}
 
-  const rows = result.rows;
-
-  await redis.set(cacheKey, JSON.stringify(rows), "EX", 60);
-
-  return rows;
-};
 
 export const getUserRank = async (userId: string) => {
   const result = await pool.query(
