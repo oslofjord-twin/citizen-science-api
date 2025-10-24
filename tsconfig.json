@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "type": "module",
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "node",
