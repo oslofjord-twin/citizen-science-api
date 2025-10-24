@@ -1,4 +1,4 @@
-import area from "../data/oslofjordArea.json" assert { type: "json" };
+import area from "../data/oslofjordArea.json" with { type: "json" };
 
 type Coordinate = [number, number];
 type Ring = Coordinate[];
