@@ -12,6 +12,7 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
     "resolveJsonModule": true,
+    "allowArbitraryExtensions": true,
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"]
