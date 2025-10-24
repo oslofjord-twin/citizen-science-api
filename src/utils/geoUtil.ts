@@ -1,4 +1,3 @@
-import * as turf from "@turf/turf";
 import area from "@/data/oslofjordArea.json";
 
 function normalizeLongitude(lon: number): number {
@@ -7,15 +6,28 @@ function normalizeLongitude(lon: number): number {
   return lon;
 }
 
-export function getNormalizedPolygon() {
-  const normalizedCoords = area.coordinates.map((ring: [number, number][]) =>
+const normalizedCoords = area.coordinates.map((polygon) =>
+  polygon.map((ring) =>
     ring.map(([lon, lat]) => [normalizeLongitude(lon), lat])
-  );
-  return turf.polygon(normalizedCoords);
-}
+  )
+);
 
 export function isWithinOslofjord(lat: number, lon: number): boolean {
-  const polygon = getNormalizedPolygon();
-  const point = turf.point([lon, lat]);
-  return turf.booleanPointInPolygon(point, polygon);
+  const point = [normalizeLongitude(lon), lat];
+
+  const polygon = normalizedCoords[0][0];
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0], yi = polygon[i][1];
+    const xj = polygon[j][0], yj = polygon[j][1];
+
+    const intersect =
+      yi > point[1] !== yj > point[1] &&
+      point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
+
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
 }
