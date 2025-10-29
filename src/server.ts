@@ -27,8 +27,7 @@ app.use((req, _res, next) => {
 });
 
 // Better Auth routes
-// handles both /api/auth and /api/auth/anything
-app.all(["/api/auth", "/api/auth/{*any}"], toNodeHandler(auth));
+app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use(express.json());
 
 
