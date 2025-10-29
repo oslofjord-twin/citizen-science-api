@@ -19,13 +19,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Cookie']
 }));
 
-app.use((req, _res, next) => {
-  if (req.path.startsWith("/api/auth")) {
-    console.log("REQ:", req.method, req.path);
-  }
-  next();
-});
-
 // Better Auth routes
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use(express.json());
