@@ -20,7 +20,8 @@ app.use(cors({
 }));
 
 // Better Auth routes
-app.all("/api/auth/{*any}", toNodeHandler(auth));
+// handles both /api/auth and /api/auth/anything
+app.all(["/api/auth", "/api/auth/{*any}"], toNodeHandler(auth));
 app.use(express.json());
 
 
