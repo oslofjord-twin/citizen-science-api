@@ -65,7 +65,8 @@ export const createTemperatureMeasurement = async (req: Request, res: Response):
             measurement: measurement,
             points_earned: measurement.points_earned,
             total_points: measurement.total_points,
-            level: measurement.level
+            level: measurement.level,
+            badge_id: measurement.badge_id,
         });
 
     } catch (error) {

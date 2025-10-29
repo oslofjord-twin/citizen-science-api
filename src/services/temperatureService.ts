@@ -78,6 +78,7 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
       points_earned: gamification.pointsEarned,
       total_points: gamification.totalPoints,
       level: gamification.newLevel,
+      badge_id: gamification.newBadgeId,
       temperature_data: temperatureResult.rows[0],
     };
   } catch (error) {
