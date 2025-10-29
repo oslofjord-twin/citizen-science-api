@@ -23,8 +23,8 @@ export const auth = betterAuth({
   },
 
   plugins: [
-    expo(),
     openAPI(),
+    expo(),
   ],
 
   user: {
