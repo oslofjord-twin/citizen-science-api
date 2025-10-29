@@ -7,8 +7,11 @@ import measurementRoutes from "./routes/measurements.js";
 import temperatureRoutes from "./routes/temperature.js";
 import userRoutes from "./routes/user.js";
 import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(cors({
@@ -25,7 +28,7 @@ app.use(express.json());
 app.use("/api", measurementRoutes);
 app.use("/api", temperatureRoutes);
 app.use("/api", userRoutes);
-app.use("/static", express.static(path.join(process.cwd(), "public")));
+app.use("/static", express.static(path.join(__dirname, "../public")));
 
 
 // Health check
