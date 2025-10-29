@@ -19,6 +19,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Cookie']
 }));
 
+app.use((req, _res, next) => {
+  if (req.path.startsWith("/api/auth")) {
+    console.log("REQ:", req.method, req.path);
+  }
+  next();
+});
+
 // Better Auth routes
 // handles both /api/auth and /api/auth/anything
 app.all(["/api/auth", "/api/auth/{*any}"], toNodeHandler(auth));
