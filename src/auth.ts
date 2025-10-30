@@ -31,6 +31,10 @@ export const auth = betterAuth({
     deleteUser: { enabled: true },
   },
 
+  advanced: {
+    useSecureCookies: false,
+  },
+
   appName: "CitizenScienceApp",
   baseURL: process.env.BASE_URL!,
   trustedOrigins: process.env.TRUSTED_ORIGINS?.split(',') || [],
