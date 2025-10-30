@@ -44,14 +44,7 @@ export const auth = betterAuth({
       if (ctx.path === "/sign-up/email") {
         console.log("=".repeat(60));
         console.log("🔍 Request Origin:", ctx.request?.headers.get("origin"));
-        console.log("🔍 Request Referer:", ctx.request?.headers.get("referer"));
-        console.log("🔍 Trusted Origins:", [
-            "citizenscienceapp://",
-            "http://158.39.200.250",
-            "http://localhost:8081",
-            "exp://localhost:8081",
-            "*"
-        ]);
+        console.log("🔍 Request Path:", ctx.path);
         console.log("=".repeat(60));
         const { name, password, email } = ctx.body || {};
 
