@@ -33,7 +33,7 @@ export const auth = betterAuth({
 
   appName: "CitizenScienceApp",
   baseURL: process.env.BASE_URL!,
-  trustedOrigins: [process.env.TRUSTED_ORIGINS!],
+  trustedOrigins: process.env.TRUSTED_ORIGINS?.split(',') || [],
 
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
