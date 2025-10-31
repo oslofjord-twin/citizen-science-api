@@ -22,11 +22,13 @@ async function revalidateUserAchievements(userId: string, cacheKey: string) {
   await redis.setex(cacheKey, 60, JSON.stringify(data));
 }
 
+/**
+ * Fetch achievements earned by a specific user.
+ */
 async function queryUserAchievements(userId: string) {
   const result = await pool.query(
     `
     SELECT
-      ua.id,
       ua.user_id,
       ua.achievement_id,
       a.name AS achievement_name,
