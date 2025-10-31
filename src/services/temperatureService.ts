@@ -28,7 +28,7 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
       data.depth_meters
     );
 
-    await checkAndAwardAchievements(data.userId);
+    await checkAndAwardAchievements(client, data.userId);
 
     const measurementResult = await client.query(
       `
