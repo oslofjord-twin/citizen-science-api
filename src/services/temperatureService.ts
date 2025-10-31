@@ -1,6 +1,7 @@
 import { pool } from "../config/database.js";
 import { v4 as uuidv4 } from "uuid";
 import * as temperaturePointsService from "./temperaturePointsService.js";
+import { checkAndAwardAchievements } from "./awardAchievementsService.js";
 
 export interface CreateTemperatureMeasurementData {
   userId: string;
@@ -26,6 +27,8 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
       data.userId,
       data.depth_meters
     );
+
+    await checkAndAwardAchievements(data.userId);
 
     const measurementResult = await client.query(
       `
