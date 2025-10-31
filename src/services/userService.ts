@@ -105,4 +105,3 @@ export const getUserRank = async (userId: string) => {
 
   return result.rows[0];
 };
-
