@@ -47,7 +47,8 @@ export const awardPoints = async (
     `
       UPDATE "user"
       SET total_points = $1,
-          level = $2
+          level = $2,
+          badge_id = $2
       WHERE id = $3;
     `,
     [newTotal, newLevel, userId]
