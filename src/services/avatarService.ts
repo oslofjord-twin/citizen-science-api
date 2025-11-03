@@ -7,9 +7,7 @@ export const getAllAvatars = async () => {
       id,
       name,
       description,
-      image_url,
-      "createdAt",
-      "updatedAt"
+      image_url
     FROM avatars
     ORDER BY id ASC;
     `
