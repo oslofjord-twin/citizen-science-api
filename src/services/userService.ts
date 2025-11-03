@@ -71,7 +71,6 @@ async function queryLeaderboard(limit: number) {
   return result.rows;
 }
 
-
 export const getUserRank = async (userId: string) => {
   const result = await pool.query(
     `
