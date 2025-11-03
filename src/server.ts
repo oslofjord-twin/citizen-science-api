@@ -29,7 +29,7 @@ app.use(express.json());
 app.use("/api", measurementRoutes);
 app.use("/api", temperatureRoutes);
 app.use("/api", userRoutes);
-app.use("api", communityRoutes);
+app.use("/api", communityRoutes);
 app.use("/static", express.static(path.join(__dirname, "../public")));
 
 
