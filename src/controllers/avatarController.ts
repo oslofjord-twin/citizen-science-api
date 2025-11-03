@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from "../middleware/auth.js";
 import * as avatarService from "../services/avatarService.js"
 
 export const getAllAvatars = async (
+    req: Request,
     res: Response
 ): Promise<void> => {
     try {
