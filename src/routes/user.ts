@@ -10,6 +10,6 @@ router.get("/user/profile", authenticateUser, userController.getUserProfile);
 router.get("/user/leaderboard", authenticateUser, userController.getLeaderboard);
 router.get("/user/achievements", authenticateUser, achievementsController.getUserAchievements);
 router.get("/user/avatars", authenticateUser, avatarController.getAllAvatars);
-router.get("/user/avatars/select", authenticateUser, avatarController.assignAvatarToUser);
+router.put("/user/avatars/select", authenticateUser, avatarController.assignAvatarToUser);
 
 export default router;
