@@ -9,12 +9,18 @@ export const createTemperatureMeasurement = async (req: Request, res: Response):
         const userId = (req as AuthenticatedRequest).user.id;
 
         // Validate required fields
-        if (!value_celsius || !latitude || !longitude || !measurement_date) {
+        if (
+            value_celsius == null ||
+            latitude == null ||
+            longitude == null ||
+            !measurement_date
+        ) {
             res.status(400).json({
                 error: 'Missing required fields: value_celsius, latitude, longitude, measurement_date'
             });
             return;
         }
+
 
         // Validate data types
         if (typeof value_celsius !== 'number') {
