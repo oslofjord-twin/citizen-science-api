@@ -28,8 +28,6 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
       data.depth_meters
     );
 
-    await checkAndAwardAchievements(client, data.userId);
-
     const measurementResult = await client.query(
       `
       INSERT INTO measurements (
@@ -66,6 +64,8 @@ export const createTemperatureMeasurement = async (data: CreateTemperatureMeasur
         data.notes || null,
       ]
     );
+
+    await checkAndAwardAchievements(client, data.userId);
 
     await client.query("COMMIT");
 
