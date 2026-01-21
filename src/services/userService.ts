@@ -1,6 +1,31 @@
 import { pool } from "../config/database.js";
 import redis from "../redisClient.js";
 
+export const getUserProfile = async (userId: string) => {
+  const result = await pool.query(
+    `
+    SELECT
+      u.id,
+      u.name,
+      u.email,
+      u.total_points,
+      u.level,
+      u."createdAt",
+      b.name AS badge_name,
+      b.image_url AS badge_image_url,
+      a.name AS avatar_name,
+      a.image_url AS avatar_image_url
+    FROM "user" u
+    LEFT JOIN badges b ON u.badge_id = b.id
+    LEFT JOIN avatars a ON u.avatar_id = a.id
+    WHERE u.id = $1;
+    `,
+    [userId]
+  );
+
+  return result.rows[0];
+};
+
 const getInterval = (timespan: string) => {
   switch (timespan) {
     case "week": return "7 days";
