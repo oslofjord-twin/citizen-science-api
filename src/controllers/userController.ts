@@ -47,12 +47,7 @@ export const getLeaderboard = async (req: Request, res: Response): Promise<void>
       success: true,
       timespan,
       leaderboard,
-      currentUser: currentUser || { 
-        id: userId, 
-        rank: ">1000", 
-        period_points: 0, 
-        message: "No contributions in this period" 
-      },
+      currentUser: currentUser,
     });
   } catch (error) {
     console.error("Error fetching leaderboard:", error);
