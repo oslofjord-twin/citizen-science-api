@@ -1,12 +1,17 @@
 import { isWithinOslofjord } from "../utils/geoUtil.js";
-import { hasuraRequest } from "../utils/hasura.js";
+import { hasuraRequest } from "../utils/hasura.js"; // Standardized fetch wrapper
 
-// Orchestrates the validation and creation of a simulation
+/**
+ * Validates location, finds the grid, and inserts the simulation request
+ */
 export const orchestrateSimulation = async (userId: string, lat: number, lng: number, species: string) => {
+    // 1. FAST BOUNDARY CHECK
     if (!isWithinOslofjord(lat, lng)) {
         throw new Error('This location is outside the Oslofjord simulation area.');
     }
 
+    // 2. GRID INTERSECTION
+    // CRITICAL: PostGIS expects [Longitude, Latitude]
     const GET_INTERSECTION = `
         query Intersection($point: geometry!){
           grid(where: {geom: {_st_intersects: $point}}) { id }
@@ -16,11 +21,12 @@ export const orchestrateSimulation = async (userId: string, lat: number, lng: nu
     const gridData = await hasuraRequest(GET_INTERSECTION, { point });
 
     if (!gridData.grid || gridData.grid.length === 0) {
-        throw new Error('No simulation data available for this specific coordinate.');
+        throw new Error('No simulation grid found for this coordinate.');
     }
 
     const gridId = gridData.grid[0].id;
 
+    // 3. INSERT REQUEST
     const INSERT_REQUEST = `
         mutation InsertRequest ($species: String!, $grid_id: Int!){
           insert_requests_one(object: {species_name: $species, grid_id: $grid_id}) {
@@ -39,25 +45,36 @@ export const orchestrateSimulation = async (userId: string, lat: number, lng: nu
     };
 };
 
+/**
+ * Fetch species list
+ */
 export const getAllSpecies = async () => {
     const query = `query Species { species { name } }`;
     const data = await hasuraRequest(query);
     return data.species;
 };
 
+/**
+ * Polling: Check if request is done
+ * Reverted to array-style query to match your working frontend
+ */
 export const checkStatus = async (requestId: number) => {
     const query = `
         query CheckStatus($requestId: Int!) {
-          requests_by_pk(request_id: $requestId) {
+          requests(where: {request_id: {_eq: $requestId}}) {
             request_id
             done
           }
         }
     `;
     const data = await hasuraRequest(query, { requestId });
-    return data.requests_by_pk;
+    return data.requests[0] || null;
 };
 
+/**
+ * Final Data Fetch
+ * Matches your working frontend's specific query structure
+ */
 export const fetchResults = async (requestId: number, gridId: number) => {
     const query = `
       query GetResults ($grid_id: Int!, $request_id: Int!) {

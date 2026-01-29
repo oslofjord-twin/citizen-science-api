@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../middleware/auth.js";
 import * as simulationService from "../services/simulationService.js";
 
-// Handles the species list for the UI dropdown
 export const getSpeciesList = async (req: Request, res: Response): Promise<void> => {
     try {
         const species = await simulationService.getAllSpecies();
@@ -13,7 +12,6 @@ export const getSpeciesList = async (req: Request, res: Response): Promise<void>
     }
 };
 
-// Validates location and starts simulation in one request
 export const startSimulation = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = (req as AuthenticatedRequest).user.id;
@@ -38,28 +36,30 @@ export const startSimulation = async (req: Request, res: Response): Promise<void
         });
 
     } catch (error: any) {
+        console.error('Simulation Start Error:', error.message);
         res.status(400).json({ success: false, error: error.message });
     }
 };
 
-// Used for polling from the frontend
 export const checkRequestStatus = async (req: Request, res: Response): Promise<void> => {
     try {
         const { requestId } = req.params;
-        const status = await simulationService.checkStatus(parseInt(requestId));
+        const requestRecord = await simulationService.checkStatus(parseInt(requestId));
 
-        if (!status) {
+        if (!requestRecord) {
             res.status(404).json({ success: false, error: "Request not found" });
             return;
         }
 
-        res.status(200).json({ success: true, done: status.done });
+        res.status(200).json({ 
+            success: true, 
+            done: requestRecord.done // Should return true after ~4 seconds
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: "Status check failed" });
     }
 };
 
-// Final step: Fetches full simulation data once status is 'done'
 export const getSimulationResults = async (req: Request, res: Response): Promise<void> => {
     try {
         const { requestId, gridId } = req.query;
@@ -76,6 +76,7 @@ export const getSimulationResults = async (req: Request, res: Response): Promise
 
         res.status(200).json({ success: true, data });
     } catch (error) {
+        console.error('Error fetching results:', error);
         res.status(500).json({ success: false, error: "Failed to fetch results" });
     }
 };
