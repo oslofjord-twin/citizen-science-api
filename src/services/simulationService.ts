@@ -23,8 +23,14 @@ export const orchestrateSimulation = async (userId: string, lat: number, lng: nu
 
     const CHECK_DATA = `
         query CheckData($gridId: Int!) {
-            simulations_aggregate(where: {grid_id: {_eq: $gridId}}) {
-            aggregate { count }
+            simulations_aggregate(where: {
+                grid_id: {_eq: $gridId}, 
+                _and: [
+                    {temperature: {_is_null: false}},
+                    {conductivity: {_is_null: false}}
+                ]
+            }) {
+                aggregate { count }
             }
         }
     `;
