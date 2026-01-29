@@ -43,8 +43,8 @@ export const auth = betterAuth({
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path === "/sign-up/email") {
         console.log("=".repeat(60));
-        console.log("🔍 Request Origin:", ctx.request?.headers.get("origin"));
-        console.log("🔍 Request Path:", ctx.path);
+        console.log("Request Origin:", ctx.request?.headers.get("origin"));
+        console.log("Request Path:", ctx.path);
         console.log("=".repeat(60));
         const { name, password, email } = ctx.body || {};
 
