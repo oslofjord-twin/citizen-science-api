@@ -1,17 +1,12 @@
 import { isWithinOslofjord } from "../utils/geoUtil.js";
-import { hasuraRequest } from "../utils/hasura.js"; // Standardized fetch wrapper
+import { hasuraRequest } from "../utils/hasura.js";
 
-/**
- * Validates location, finds the grid, and inserts the simulation request
- */
+// Validates location, finds the grid, and inserts the simulation request
 export const orchestrateSimulation = async (userId: string, lat: number, lng: number, species: string) => {
-    // 1. FAST BOUNDARY CHECK
     if (!isWithinOslofjord(lat, lng)) {
         throw new Error('This location is outside the Oslofjord simulation area.');
     }
 
-    // 2. GRID INTERSECTION
-    // CRITICAL: PostGIS expects [Longitude, Latitude]
     const GET_INTERSECTION = `
         query Intersection($point: geometry!){
           grid(where: {geom: {_st_intersects: $point}}) { id }
@@ -26,7 +21,19 @@ export const orchestrateSimulation = async (userId: string, lat: number, lng: nu
 
     const gridId = gridData.grid[0].id;
 
-    // 3. INSERT REQUEST
+    const CHECK_DATA = `
+        query CheckData($gridId: Int!) {
+            simulations_aggregate(where: {grid_id: {_eq: $gridId}}) {
+            aggregate { count }
+            }
+        }
+    `;
+
+    const checkRes = await hasuraRequest(CHECK_DATA, { gridId });
+    if (checkRes.simulations_aggregate.aggregate.count === 0) {
+        throw new Error('This location is within the fjord, but no simulation data exists for this specific grid cell.');
+    }
+
     const INSERT_REQUEST = `
         mutation InsertRequest ($species: String!, $grid_id: Int!){
           insert_requests_one(object: {species_name: $species, grid_id: $grid_id}) {
@@ -34,9 +41,9 @@ export const orchestrateSimulation = async (userId: string, lat: number, lng: nu
           }
         }
     `;
-    const requestData = await hasuraRequest(INSERT_REQUEST, { 
-        species, 
-        grid_id: gridId 
+    const requestData = await hasuraRequest(INSERT_REQUEST, {
+        species,
+        grid_id: gridId
     });
 
     return {
@@ -45,19 +52,15 @@ export const orchestrateSimulation = async (userId: string, lat: number, lng: nu
     };
 };
 
-/**
- * Fetch species list
- */
+// Fetch species list
 export const getAllSpecies = async () => {
     const query = `query Species { species { name } }`;
     const data = await hasuraRequest(query);
     return data.species;
 };
 
-/**
- * Polling: Check if request is done
- * Reverted to array-style query to match your working frontend
- */
+// Polling: Check if request is done
+// Reverted to array-style query to match your working frontend
 export const checkStatus = async (requestId: number) => {
     const query = `
         query CheckStatus($requestId: Int!) {
@@ -71,10 +74,8 @@ export const checkStatus = async (requestId: number) => {
     return data.requests[0] || null;
 };
 
-/**
- * Final Data Fetch
- * Matches your working frontend's specific query structure
- */
+// Final Data Fetch
+// Matches your working frontend's specific query structure
 export const fetchResults = async (requestId: number, gridId: number) => {
     const query = `
       query GetResults ($grid_id: Int!, $request_id: Int!) {
