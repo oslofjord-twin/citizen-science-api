@@ -1,5 +1,5 @@
-import { isWithinOslofjord } from "@/utils/geoUtil";
-import { hasuraRequest } from "@/utils/hasura";
+import { isWithinOslofjord } from "../utils/geoUtil.js";
+import { hasuraRequest } from "../utils/hasura.js";
 
 // Orchestrates the validation and creation of a simulation
 export const orchestrateSimulation = async (userId: string, lat: number, lng: number, species: string) => {
