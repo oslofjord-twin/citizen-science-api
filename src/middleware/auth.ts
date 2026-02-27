@@ -15,6 +15,18 @@ export const authenticateUser = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  // Development bypass (UNSAFE - only use for local testing)
+  if (process.env.DISABLE_AUTH === "true") {
+    console.warn("⚠️  AUTH DISABLED - using mock user");
+    (req as AuthenticatedRequest).user = {
+      id: process.env.DEV_USER_ID || "dev-user-123",
+      email: process.env.DEV_USER_EMAIL || "dev@example.com",
+      name: process.env.DEV_USER_NAME || "Dev User",
+    };
+    next();
+    return;
+  }
+
   try {
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),

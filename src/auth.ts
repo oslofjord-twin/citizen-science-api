@@ -4,14 +4,68 @@ import { openAPI } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { createAuthMiddleware, APIError } from "better-auth/api";
 import * as dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Load env from the API project root regardless of where the process is started from.
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9._]{3,19}$/;
+
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL is not set. Better Auth requires Postgres. " +
+      "Set DATABASE_URL in citizen-science-api/.env (e.g. postgres://user:pass@localhost:5432/db)."
+  );
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
 });
+
+const cleanEnvString = (value: string | undefined): string | undefined => {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const lower = trimmed.toLowerCase();
+  if (lower === "null" || lower === "undefined") return undefined;
+  return trimmed;
+};
+
+const isValidHttpUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+const computeBaseUrl = (): string => {
+  const explicitBaseUrl = cleanEnvString(process.env.BASE_URL);
+  if (explicitBaseUrl) {
+    if (!isValidHttpUrl(explicitBaseUrl)) {
+      console.warn(
+        `Invalid BASE_URL provided (${explicitBaseUrl}). Falling back to derived local base URL.`
+      );
+    } else {
+      return explicitBaseUrl;
+    }
+  }
+
+  // Convenience for local development: if EXPO_PUBLIC_API_URL is set to e.g.
+  // http://192.168.0.247:3000/api, derive http://192.168.0.247:3000/api/auth
+  const apiUrl = cleanEnvString(process.env.EXPO_PUBLIC_API_URL);
+  if (apiUrl) {
+    const trimmed = apiUrl.replace(/\/+$/, "");
+    const serverRoot = trimmed.replace(/\/api\/?$/, "");
+    return `${serverRoot}/api/auth`;
+  }
+
+  const port = process.env.PORT || "3000";
+  return `http://localhost:${port}/api/auth`;
+};
 
 export const auth = betterAuth({
   database: pool,
@@ -36,8 +90,13 @@ export const auth = betterAuth({
   },
 
   appName: "CitizenScienceApp",
-  baseURL: process.env.BASE_URL!,
-  trustedOrigins: process.env.TRUSTED_ORIGINS?.split(',') || [],
+  baseURL: computeBaseUrl(),
+  trustedOrigins: (cleanEnvString(process.env.TRUSTED_ORIGINS)
+    ?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) || [])
+    // avoid placeholder values sneaking through
+    .filter((origin) => origin.toLowerCase() !== "null" && origin.toLowerCase() !== "undefined"),
 
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
