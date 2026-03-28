@@ -5,14 +5,16 @@ import * as measurementService from "../services/measurementService.js";
 export const getMeasurements = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = (req as AuthenticatedRequest).user.id;
-        const { data_type, latitude, longitude, radius_km, limit = 100, offset = 0, start_date, end_date } = req.query;
+        const MAX_LIMIT = 10;
+
+        const { data_type, latitude, longitude, radius_km, limit = 10, offset = 0, start_date, end_date } = req.query;
 
         const filters = {
             data_type: data_type as string,
             latitude: latitude ? parseFloat(latitude as string) : undefined,
             longitude: longitude ? parseFloat(longitude as string) : undefined,
             radius_km: radius_km ? parseFloat(radius_km as string) : undefined,
-            limit: parseInt(limit as string),
+            limit: Math.min(Math.max(1, parseInt(limit as string) || 10), MAX_LIMIT),
             offset: parseInt(offset as string),
             start_date: start_date as string,
             end_date: end_date as string

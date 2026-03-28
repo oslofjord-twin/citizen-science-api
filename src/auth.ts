@@ -7,7 +7,10 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9._]{3,19}$/;
+// Reqex: At least a 4 character username, at most 25 characters
+const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9._]{3,24}$/;
+// Regex: At least one uppercase letter, one lowercase letter, one number and one special character.
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,40}$/;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
@@ -18,9 +21,23 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 40,
     requireEmailVerification: false,
     autoSignIn: true,
   },
+
+  rateLimit: {
+        enabled: true,
+        window: 60,
+        max: 20,
+        customRules: {
+            "/sign-in/email": {
+                window: 900,
+                max: 5,
+            },
+        },
+    },
 
   plugins: [
     openAPI(),
@@ -32,7 +49,7 @@ export const auth = betterAuth({
   },
 
   advanced: {
-    useSecureCookies: false,
+    useSecureCookies: true,
   },
 
   appName: "CitizenScienceApp",
@@ -41,41 +58,37 @@ export const auth = betterAuth({
 
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-      if (ctx.path === "/sign-up/email") {
-        console.log("=".repeat(60));
-        console.log("Request Origin:", ctx.request?.headers.get("origin"));
-        console.log("Request Path:", ctx.path);
-        console.log("=".repeat(60));
-        const { name, password, email } = ctx.body || {};
+      const isSignUp = ctx.path === "/sign-up/email";
+      const isChangePassword = ctx.path === "/change-password";
 
-        if (!name || !USERNAME_REGEX.test(name)) {
-          throw new APIError("BAD_REQUEST", {
-            message:
-              "Username must be 4-20 characters, start with a letter, and contain only letters, numbers, underscores, or periods.",
-          });
-        }
-
-        if (!password || typeof password !== "string" || password.length < 6) {
-          throw new APIError("BAD_REQUEST", {
-            message: "Password must be at least 6 characters long.",
-          });
-        }
-
-        const { rows } = await pool.query(
-          `
-          SELECT 1
-          FROM "user"
-          WHERE LOWER(name) = LOWER($1)
-             OR LOWER(email) = LOWER($2)
-          LIMIT 1;
-          `,
-          [name, email]
-        );
+      if (isSignUp || isChangePassword) {
+        const { name, password, newPassword, email } = ctx.body || {};
         
-        if (rows.length > 0) {
+        const passwordToValidate = isChangePassword ? newPassword : password;
+
+        if (!passwordToValidate || !PASSWORD_REGEX.test(passwordToValidate)) {
           throw new APIError("BAD_REQUEST", {
-            message: "Username or email is already taken.",
+            message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
           });
+        }
+
+        if (isSignUp) {
+          if (!name || !USERNAME_REGEX.test(name)) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Username must be 4-25 characters, start with a letter, and contain only letters, numbers, underscores, or periods.",
+            });
+          }
+
+          const { rows } = await pool.query(
+            `SELECT 1 FROM "user" WHERE LOWER(name) = LOWER($1) OR LOWER(email) = LOWER($2) LIMIT 1;`,
+            [name, email]
+          );
+          
+          if (rows.length > 0) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Username or email is already taken.",
+            });
+          }
         }
       }
     }),
