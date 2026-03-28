@@ -12,6 +12,9 @@ const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9._]{3,24}$/;
 // Regex: At least one uppercase letter, one lowercase letter, one number and one special character.
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,40}$/;
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
 });
@@ -63,11 +66,11 @@ export const auth = betterAuth({
         const { email } = ctx.body || {};
         if (email) {
           const { rows } = await pool.query(
-            `SELECT failed_attempts, lockout_until FROM "user" WHERE LOWER(email) = LOWER($1) LIMIT 1;`,
+            `SELECT lockout_until FROM "user" WHERE LOWER(email) = LOWER($1) LIMIT 1;`,
             [email]
           );
           if (rows.length > 0) {
-            const { failed_attempts, lockout_until } = rows[0];
+            const { lockout_until } = rows[0];
             if (lockout_until && new Date(lockout_until) > new Date()) {
               const remainingMs = new Date(lockout_until).getTime() - Date.now();
               const remainingMin = Math.ceil(remainingMs / 60000);
@@ -126,12 +129,12 @@ export const auth = betterAuth({
             `UPDATE "user" 
                  SET failed_attempts = failed_attempts + 1,
                      lockout_until = CASE 
-                         WHEN failed_attempts + 1 >= 5 
-                         THEN NOW() + INTERVAL '15 minutes'
+                         WHEN failed_attempts + 1 >= $2
+                         THEN NOW() + ($3 || ' minutes')::INTERVAL
                          ELSE NULL 
                      END
                  WHERE LOWER(email) = LOWER($1);`,
-            [email]
+            [email, MAX_ATTEMPTS, LOCKOUT_MINUTES]
           );
         }
       }
