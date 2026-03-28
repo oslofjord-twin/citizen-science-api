@@ -87,7 +87,7 @@ export const auth = betterAuth({
         const passwordToValidate = isChangePassword ? newPassword : password;
         if (!passwordToValidate || !PASSWORD_REGEX.test(passwordToValidate)) {
           throw new APIError("BAD_REQUEST", {
-            message: "Password must contain min 8 character and at least one uppercase and lowercase letter, one number, and one special character.",
+            message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
           });
         }
         if (isSignUp) {
@@ -109,21 +109,24 @@ export const auth = betterAuth({
       }
     }),
 
-    after: createAuthMiddleware(async (ctx) => {
-      if (ctx.path === "/sign-in/email") {
-        const { email } = ctx.body || {};
-        if (!email) return;
-
-        const isSuccess = ctx.context?.returned?.user != null;
-
-        if (isSuccess) {
+    after: [
+      {
+        matcher: (ctx) => ctx.path === "/sign-in/email" && !!ctx.context.newSession?.user,
+        handler: createAuthMiddleware(async (ctx) => {
+          const email = ctx.body?.email;
+          if (!email) return;
           await pool.query(
             `UPDATE "user" SET failed_attempts = 0, lockout_until = NULL WHERE LOWER(email) = LOWER($1);`,
             [email]
           );
-        } else {
-          // Increment failed attempts
-          const { rows } = await pool.query(
+        }),
+      },
+      {
+        matcher: (ctx) => ctx.path === "/sign-in/email" && !ctx.context.newSession?.user,
+        handler: createAuthMiddleware(async (ctx) => {
+          const email = ctx.body?.email;
+          if (!email) return;
+          await pool.query(
             `UPDATE "user" 
                      SET failed_attempts = failed_attempts + 1,
                          lockout_until = CASE 
@@ -131,12 +134,11 @@ export const auth = betterAuth({
                              THEN NOW() + INTERVAL '15 minutes'
                              ELSE NULL 
                          END
-                     WHERE LOWER(email) = LOWER($1)
-                     RETURNING failed_attempts, lockout_until;`,
+                     WHERE LOWER(email) = LOWER($1);`,
             [email]
           );
-        }
-      }
-    }),
+        }),
+      },
+    ],
   },
 });
