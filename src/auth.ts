@@ -109,36 +109,32 @@ export const auth = betterAuth({
       }
     }),
 
-    after: [
-      {
-        matcher: (ctx) => ctx.path === "/sign-in/email" && !!ctx.context.newSession?.user,
-        handler: createAuthMiddleware(async (ctx) => {
-          const email = ctx.body?.email;
-          if (!email) return;
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/sign-in/email") {
+        const email = ctx.body?.email;
+        if (!email) return;
+
+        const isSuccess = !!ctx.context.newSession?.user;
+
+        if (isSuccess) {
           await pool.query(
             `UPDATE "user" SET failed_attempts = 0, lockout_until = NULL WHERE LOWER(email) = LOWER($1);`,
             [email]
           );
-        }),
-      },
-      {
-        matcher: (ctx) => ctx.path === "/sign-in/email" && !ctx.context.newSession?.user,
-        handler: createAuthMiddleware(async (ctx) => {
-          const email = ctx.body?.email;
-          if (!email) return;
+        } else {
           await pool.query(
             `UPDATE "user" 
-                     SET failed_attempts = failed_attempts + 1,
-                         lockout_until = CASE 
-                             WHEN failed_attempts + 1 >= 5 
-                             THEN NOW() + INTERVAL '15 minutes'
-                             ELSE NULL 
-                         END
-                     WHERE LOWER(email) = LOWER($1);`,
+                 SET failed_attempts = failed_attempts + 1,
+                     lockout_until = CASE 
+                         WHEN failed_attempts + 1 >= 5 
+                         THEN NOW() + INTERVAL '15 minutes'
+                         ELSE NULL 
+                     END
+                 WHERE LOWER(email) = LOWER($1);`,
             [email]
           );
-        }),
-      },
-    ],
+        }
+      }
+    }),
   },
 });
