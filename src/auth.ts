@@ -28,16 +28,16 @@ export const auth = betterAuth({
   },
 
   rateLimit: {
-        enabled: true,
-        window: 60,
-        max: 20,
-        customRules: {
-            "/sign-in/email": {
-                window: 900,
-                max: 5,
-            },
-        },
+    enabled: true,
+    window: 60,
+    max: 20,
+    customRules: {
+      "/sign-in/email": {
+        window: 900,
+        max: 5,
+      },
     },
+  },
 
   plugins: [
     openAPI(),
@@ -58,37 +58,83 @@ export const auth = betterAuth({
 
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      // Account lockout check on sign-in
+      if (ctx.path === "/sign-in/email") {
+        const { email } = ctx.body || {};
+        if (email) {
+          const { rows } = await pool.query(
+            `SELECT failed_attempts, lockout_until FROM "user" WHERE LOWER(email) = LOWER($1) LIMIT 1;`,
+            [email]
+          );
+          if (rows.length > 0) {
+            const { failed_attempts, lockout_until } = rows[0];
+            if (lockout_until && new Date(lockout_until) > new Date()) {
+              const remainingMs = new Date(lockout_until).getTime() - Date.now();
+              const remainingMin = Math.ceil(remainingMs / 60000);
+              throw new APIError("TOO_MANY_REQUESTS", {
+                message: `Account is temporarily locked. Please try again in ${remainingMin} minute${remainingMin > 1 ? 's' : ''}.`,
+              });
+            }
+          }
+        }
+      }
+
+      // Password validation on sign-up and change-password
       const isSignUp = ctx.path === "/sign-up/email";
       const isChangePassword = ctx.path === "/change-password";
-
       if (isSignUp || isChangePassword) {
         const { name, password, newPassword, email } = ctx.body || {};
-        
         const passwordToValidate = isChangePassword ? newPassword : password;
-
         if (!passwordToValidate || !PASSWORD_REGEX.test(passwordToValidate)) {
           throw new APIError("BAD_REQUEST", {
-            message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+            message: "Password must contain min 8 character and at least one uppercase and lowercase letter, one number, and one special character.",
           });
         }
-
         if (isSignUp) {
           if (!name || !USERNAME_REGEX.test(name)) {
             throw new APIError("BAD_REQUEST", {
               message: "Username must be 4-25 characters, start with a letter, and contain only letters, numbers, underscores, or periods.",
             });
           }
-
           const { rows } = await pool.query(
             `SELECT 1 FROM "user" WHERE LOWER(name) = LOWER($1) OR LOWER(email) = LOWER($2) LIMIT 1;`,
             [name, email]
           );
-          
           if (rows.length > 0) {
             throw new APIError("BAD_REQUEST", {
               message: "Username or email is already taken.",
             });
           }
+        }
+      }
+    }),
+
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/sign-in/email") {
+        const { email } = ctx.body || {};
+        if (!email) return;
+
+        const isSuccess = ctx.context?.returned?.user != null;
+
+        if (isSuccess) {
+          await pool.query(
+            `UPDATE "user" SET failed_attempts = 0, lockout_until = NULL WHERE LOWER(email) = LOWER($1);`,
+            [email]
+          );
+        } else {
+          // Increment failed attempts
+          const { rows } = await pool.query(
+            `UPDATE "user" 
+                     SET failed_attempts = failed_attempts + 1,
+                         lockout_until = CASE 
+                             WHEN failed_attempts + 1 >= 5 
+                             THEN NOW() + INTERVAL '15 minutes'
+                             ELSE NULL 
+                         END
+                     WHERE LOWER(email) = LOWER($1)
+                     RETURNING failed_attempts, lockout_until;`,
+            [email]
+          );
         }
       }
     }),
