@@ -36,7 +36,8 @@ const globalLimiter = rateLimit({
   standardHeaders: true, 
   legacyHeaders: false, 
   skip: (req, res) => {
-    return req.originalUrl.startsWith('/api/auth');
+    return req.originalUrl.startsWith('/api/auth') ||
+    req.originalUrl.startsWith('/api/simulation/status');
   },
   message: { error: 'Too many requests from this IP, please try again after 15 minutes' }
 });
