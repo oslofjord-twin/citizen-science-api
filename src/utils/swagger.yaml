@@ -1,11 +1,20 @@
 openapi: 3.0.0
 info:
-  title: Citizen Science API
+  title: Oslofjord Data & Gamification API
   version: 1.0.0
-  description: API for users, gamification, measurements, community goals, and simulations.
+  description: |
+    API for the Citizen Science app in the Digital Twin of the Oslo fjord.
+    
+    ### Standard Request Headers
+    All authenticated endpoints require the following headers in your HTTP requests:
+    
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': 'better-auth.session_token=<your_session_token>'
+    }
 servers:
   - url: /
-    description: Production
+    description: Current Environment
 
 components:
   securitySchemes:
@@ -13,11 +22,7 @@ components:
       type: apiKey
       in: cookie
       name: better-auth.session_token
-      description: |
-        **Authentication is required.**
-        Include the session cookie provided by Better Auth.
-        When making requests from code, include the header: 
-        `Cookie: better-auth.session_token=<your_token>`
+      description: "Required header: `Cookie: better-auth.session_token=<token>`"
 
 security:
   - cookieAuth: []
@@ -46,12 +51,22 @@ paths:
       tags: [Users]
       responses:
         '200':
-          description: Successfully retrieved user profile
+          description: Successfully retrieved user profile including active badges and avatars
           content:
             application/json:
               example:
                 success: true
-                user: { id: "user123", name: "Jane Doe", level: 5, total_points: 1200 }
+                user: 
+                  id: "user123"
+                  name: "Jane Doe"
+                  email: "jane@example.com"
+                  total_points: 1200
+                  level: 5
+                  createdAt: "2023-01-01T12:00:00Z"
+                  badge_name: "Ocean Explorer"
+                  badge_image_url: "https://example.com/badges/explorer.png"
+                  avatar_name: "Diver"
+                  avatar_image_url: "https://example.com/avatars/diver.png"
         '404':
           description: User not found
 
@@ -65,14 +80,12 @@ paths:
           schema:
             type: integer
             default: 10
-          description: Maximum number of users to return
         - in: query
           name: timespan
           schema:
             type: string
             enum: [all, week, month]
             default: all
-          description: Filter leaderboard by timeframe
       responses:
         '200':
           description: Leaderboard array and current user's rank
@@ -81,8 +94,23 @@ paths:
               example:
                 success: true
                 timespan: "all"
-                leaderboard: []
-                currentUser: { rank: 42, points: 1200 }
+                leaderboard: 
+                  - id: "user456"
+                    name: "John Smith"
+                    level: 10
+                    total_points: 5000
+                    badge_name: "Master Biologist"
+                    badge_image_url: "https://example.com/badges/master.png"
+                    avatar_name: "Scientist"
+                    avatar_image_url: "https://example.com/avatars/scientist.png"
+                currentUser: 
+                  id: "user123"
+                  name: "Jane Doe"
+                  level: 5
+                  total_points: 1200
+                  rank: 42
+                  badge_name: "Ocean Explorer"
+                  badge_image_url: "https://example.com/badges/explorer.png"
 
   /api/user/achievements:
     get:
@@ -90,9 +118,18 @@ paths:
       tags: [Users]
       responses:
         '200':
-          description: Array of achievements
-        '404':
-          description: No achievements found for this user
+          description: Array of earned achievements
+          content:
+            application/json:
+              example:
+                success: true
+                achievements:
+                  - user_id: "user123"
+                    achievement_id: 1
+                    achievement_name: "First Submission"
+                    achievement_description: "Submitted your first measurement."
+                    achievement_image_url: "https://example.com/achievements/first.png"
+                    earned_at: "2023-10-15T12:00:00Z"
 
   /api/user/avatars:
     get:
@@ -101,6 +138,15 @@ paths:
       responses:
         '200':
           description: Array of avatars
+          content:
+            application/json:
+              example:
+                success: true
+                avatars:
+                  - id: 1
+                    name: "Diver"
+                    description: "A cool deep-sea diver."
+                    image_url: "https://example.com/avatars/diver.png"
 
   /api/user/avatars/select:
     put:
@@ -134,7 +180,12 @@ paths:
             application/json:
               example:
                 success: true
-                weekly_goal: { current_progress: 50, target: 100 }
+                weekly_goal: 
+                  goal_points: 10000
+                  current_points: 4500
+                  start_date: "2023-10-16"
+                  end_date: "2023-10-22"
+                  progress_percent: 45.00
 
   /api/measurements:
     get:
@@ -161,19 +212,38 @@ paths:
           schema: { type: integer, default: 0 }
         - in: query
           name: start_date
-          schema: { type: string, format: date }
+          schema: { type: string, format: date-time }
         - in: query
           name: end_date
-          schema: { type: string, format: date }
+          schema: { type: string, format: date-time }
       responses:
         '200':
-          description: A list of measurements with pagination data
+          description: A list of measurements with joined temperature data and pagination info
           content:
             application/json:
               example:
                 success: true
-                measurements: []
-                pagination: { total: 0, limit: 10, offset: 0 }
+                measurements: 
+                  - id: "uuid-1234"
+                    latitude: 59.9139
+                    longitude: 10.7522
+                    timestamp: "2023-10-15T12:00:00Z"
+                    data_type: "temperature"
+                    user_id: "user123"
+                    measurement_notes: "Clear water"
+                    quality_flag: null
+                    created_at: "2023-10-15T12:00:00Z"
+                    updated_at: "2023-10-15T12:00:00Z"
+                    points_earned: 10
+                    value_celsius: 14.5
+                    depth_meters: 2.5
+                    instrument_type: "Digital Thermometer"
+                    temperature_notes: "Clear water"
+                pagination: 
+                  total: 45
+                  limit: 10
+                  offset: 0
+                  hasMore: true
 
   /api/measurements/{id}:
     delete:
@@ -189,11 +259,14 @@ paths:
         '200':
           description: Measurement deleted successfully
         '400':
-          description: Measurement ID required or deletion failed
+          description: Measurement not found or access denied
 
   /api/temperature:
     post:
-      summary: Record a new temperature measurement (Oslofjord area only)
+      summary: Record a new temperature measurement
+      description: |
+        Must be within the Oslofjord area. 
+        Note: Depth (meters) factors into gamification point calculation bonuses.
       tags: [Temperature]
       requestBody:
         required: true
@@ -227,17 +300,27 @@ paths:
                   example: "Water looked clear."
       responses:
         '201':
-          description: Measurement recorded, gamification points awarded
+          description: Measurement recorded, points awarded, and potential achievements unlocked
           content:
             application/json:
               example:
                 success: true
-                measurement: {}
-                points_earned: 10
-                total_points: 120
-                level: 2
-        '400':
-          description: Missing fields, invalid data types, or coordinates outside Oslofjord
+                points_earned: 14
+                total_points: 1214
+                level: 5
+                measurement: 
+                  id: "uuid-1234"
+                  latitude: 59.9139
+                  longitude: 10.7522
+                  timestamp: "2023-10-15T12:00:00Z"
+                  data_type: "temperature"
+                  user_id: "user123"
+                  points_earned: 14
+                  temperature_data:
+                    id: "uuid-1234"
+                    value_celsius: 14.5
+                    depth_meters: 2.5
+                    instrument_type: "Digital Thermometer"
 
   /api/simulation/species:
     get:
@@ -245,16 +328,19 @@ paths:
       tags: [Simulation]
       responses:
         '200':
-          description: Array of species
+          description: Array of available species from Hasura
           content:
             application/json:
               example:
                 success: true
-                species: []
+                species:
+                  - name: "Cod"
+                  - name: "Salmon"
 
   /api/simulation/start:
     post:
       summary: Start a new geographic species simulation
+      description: Orchestrates a Hasura grid lookup to verify coordinates before starting simulation.
       tags: [Simulation]
       requestBody:
         required: true
@@ -283,7 +369,7 @@ paths:
                 requestId: 12345
                 gridId: 67890
         '400':
-          description: Missing required fields
+          description: Outside Oslofjord area or no grid found
 
   /api/simulation/status/{requestId}:
     get:
@@ -297,7 +383,7 @@ paths:
             type: integer
       responses:
         '200':
-          description: Status of the simulation
+          description: Done status of the simulation
           content:
             application/json:
               example:
@@ -323,11 +409,20 @@ paths:
             type: integer
       responses:
         '200':
-          description: Processed simulation data
+          description: Processed Hasura simulation data arrays
           content:
             application/json:
               example:
                 success: true
-                data: {}
-        '400':
-          description: Request and Grid IDs are required
+                data: 
+                  simulations:
+                    - id_sim: 101
+                      conductivity: 32.5
+                      record_time: "2023-10-15T12:00:00Z"
+                      temperature: 12.3
+                      turbidity: 1.2
+                  runtime_monitoring:
+                    - id_sim: 101
+                      preferred_spawning_temperature: true
+                      suitable_spawning_temperature: true
+                      suitable_temperature: true
