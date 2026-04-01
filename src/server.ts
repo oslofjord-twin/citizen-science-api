@@ -63,10 +63,17 @@ app.use("/api", simulationRoutes);
 app.use("/static", express.static(path.join(__dirname, "../public")));
 
 // Swagger
-const file = fs.readFileSync(path.join(__dirname, '../utils/swagger.yaml'), 'utf8');
+const file = fs.readFileSync(path.join(__dirname, '../src/utils/swagger.yaml'), 'utf8');
 const swaggerDocument = yaml.parse(file);
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+const swaggerUiOptions = {
+  customSiteTitle: "Citizen Science API Documentation",
+  swaggerOptions: {
+    supportedSubmitMethods: [],
+  }
+};
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
 
 app.get("/health", (req, res) => {
   res.send("OK");
