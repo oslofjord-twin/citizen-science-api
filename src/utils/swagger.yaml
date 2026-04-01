@@ -1,0 +1,333 @@
+openapi: 3.0.0
+info:
+  title: Citizen Science API
+  version: 1.0.0
+  description: API for users, gamification, measurements, community goals, and simulations.
+servers:
+  - url: /
+    description: Production
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: |
+        **Authentication is required.**
+        Include the session cookie provided by Better Auth.
+        When making requests from code, include the header: 
+        `Cookie: better-auth.session_token=<your_token>`
+
+security:
+  - cookieAuth: []
+
+tags:
+  - name: System
+  - name: Users
+  - name: Community
+  - name: Measurements
+  - name: Temperature
+  - name: Simulation
+
+paths:
+  /health:
+    get:
+      summary: Server health check
+      tags: [System]
+      security: [] 
+      responses:
+        '200':
+          description: Server is healthy
+
+  /api/user/profile:
+    get:
+      summary: Get logged-in user's profile
+      tags: [Users]
+      responses:
+        '200':
+          description: Successfully retrieved user profile
+          content:
+            application/json:
+              example:
+                success: true
+                user: { id: "user123", name: "Jane Doe", level: 5, total_points: 1200 }
+        '404':
+          description: User not found
+
+  /api/user/leaderboard:
+    get:
+      summary: Get the global user leaderboard
+      tags: [Users]
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of users to return
+        - in: query
+          name: timespan
+          schema:
+            type: string
+            enum: [all, week, month]
+            default: all
+          description: Filter leaderboard by timeframe
+      responses:
+        '200':
+          description: Leaderboard array and current user's rank
+          content:
+            application/json:
+              example:
+                success: true
+                timespan: "all"
+                leaderboard: []
+                currentUser: { rank: 42, points: 1200 }
+
+  /api/user/achievements:
+    get:
+      summary: Get user's earned achievements
+      tags: [Users]
+      responses:
+        '200':
+          description: Array of achievements
+        '404':
+          description: No achievements found for this user
+
+  /api/user/avatars:
+    get:
+      summary: Get a list of all available avatars
+      tags: [Users]
+      responses:
+        '200':
+          description: Array of avatars
+
+  /api/user/avatars/select:
+    put:
+      summary: Assign a specific avatar to the user
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [avatarId]
+              properties:
+                avatarId:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Avatar successfully assigned to user
+        '400':
+          description: avatarId is required
+
+  /api/community/weekly-goal:
+    get:
+      summary: Get the current weekly community goal
+      tags: [Community]
+      responses:
+        '200':
+          description: Weekly goal details and progress
+          content:
+            application/json:
+              example:
+                success: true
+                weekly_goal: { current_progress: 50, target: 100 }
+
+  /api/measurements:
+    get:
+      summary: Get measurements for the user with filters
+      tags: [Measurements]
+      parameters:
+        - in: query
+          name: data_type
+          schema: { type: string }
+        - in: query
+          name: latitude
+          schema: { type: number }
+        - in: query
+          name: longitude
+          schema: { type: number }
+        - in: query
+          name: radius_km
+          schema: { type: number }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10, maximum: 10 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: start_date
+          schema: { type: string, format: date }
+        - in: query
+          name: end_date
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: A list of measurements with pagination data
+          content:
+            application/json:
+              example:
+                success: true
+                measurements: []
+                pagination: { total: 0, limit: 10, offset: 0 }
+
+  /api/measurements/{id}:
+    delete:
+      summary: Delete a specific measurement
+      tags: [Measurements]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Measurement deleted successfully
+        '400':
+          description: Measurement ID required or deletion failed
+
+  /api/temperature:
+    post:
+      summary: Record a new temperature measurement (Oslofjord area only)
+      tags: [Temperature]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value_celsius, latitude, longitude, measurement_date]
+              properties:
+                value_celsius:
+                  type: number
+                  example: 14.5
+                latitude:
+                  type: number
+                  example: 59.9139
+                longitude:
+                  type: number
+                  example: 10.7522
+                measurement_date:
+                  type: string
+                  format: date-time
+                  example: "2023-10-15T12:00:00Z"
+                depth_meters:
+                  type: number
+                  example: 2.5
+                instrument_type:
+                  type: string
+                  example: "Digital Thermometer"
+                notes:
+                  type: string
+                  example: "Water looked clear."
+      responses:
+        '201':
+          description: Measurement recorded, gamification points awarded
+          content:
+            application/json:
+              example:
+                success: true
+                measurement: {}
+                points_earned: 10
+                total_points: 120
+                level: 2
+        '400':
+          description: Missing fields, invalid data types, or coordinates outside Oslofjord
+
+  /api/simulation/species:
+    get:
+      summary: Get list of species available for simulation
+      tags: [Simulation]
+      responses:
+        '200':
+          description: Array of species
+          content:
+            application/json:
+              example:
+                success: true
+                species: []
+
+  /api/simulation/start:
+    post:
+      summary: Start a new geographic species simulation
+      tags: [Simulation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [latitude, longitude, species_name]
+              properties:
+                latitude:
+                  type: number
+                  example: 59.9139
+                longitude:
+                  type: number
+                  example: 10.7522
+                species_name:
+                  type: string
+                  example: "Cod"
+      responses:
+        '201':
+          description: Simulation started successfully
+          content:
+            application/json:
+              example:
+                success: true
+                requestId: 12345
+                gridId: 67890
+        '400':
+          description: Missing required fields
+
+  /api/simulation/status/{requestId}:
+    get:
+      summary: Check the status of a running simulation
+      tags: [Simulation]
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Status of the simulation
+          content:
+            application/json:
+              example:
+                success: true
+                done: true
+        '404':
+          description: Request not found
+
+  /api/simulation/results:
+    get:
+      summary: Get completed simulation results
+      tags: [Simulation]
+      parameters:
+        - in: query
+          name: requestId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: gridId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Processed simulation data
+          content:
+            application/json:
+              example:
+                success: true
+                data: {}
+        '400':
+          description: Request and Grid IDs are required

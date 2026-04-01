@@ -12,15 +12,16 @@ import path from "path";
 import { fileURLToPath } from "url";
 import rateLimit from "express-rate-limit";
 import helmet from 'helmet';
+import swaggerUi from "swagger-ui-express";
+import fs from "fs";
+import yaml from "yaml";
 
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 const app = express();
 
 app.set('trust proxy', 1);
-
 app.use(helmet());
 
 app.use(cors({
@@ -29,7 +30,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Cookie']
 }));
 
-// Rate Limiting on all routes except /api/auth
 const globalLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 200,
@@ -44,7 +44,6 @@ const globalLimiter = rateLimit({
 
 app.use(globalLimiter);
 
-// Better Auth routes
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use(express.json());
 
@@ -63,8 +62,12 @@ app.use("/api", communityRoutes);
 app.use("/api", simulationRoutes);
 app.use("/static", express.static(path.join(__dirname, "../public")));
 
+// Swagger
+const file = fs.readFileSync(path.join(__dirname, '../utils/swagger.yaml'), 'utf8');
+const swaggerDocument = yaml.parse(file);
 
-// Health check
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 app.get("/health", (req, res) => {
   res.send("OK");
 });
@@ -72,4 +75,5 @@ app.get("/health", (req, res) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Better Auth server running on port ${port}`);
+  console.log(`📚 API Docs available at: http://localhost:${port}/api-docs`);
 });

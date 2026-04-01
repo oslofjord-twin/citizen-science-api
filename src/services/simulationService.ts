@@ -100,5 +100,7 @@ export const fetchResults = async (requestId: number, gridId: number) => {
         }
       }
     `;
-    return await hasuraRequest(query, { grid_id: gridId, request_id: requestId });
+    const rawData = await hasuraRequest(query, { grid_id: gridId, request_id: requestId });
+    console.log("RAW HASURA PAYLOAD:", JSON.stringify(rawData, null, 2));
+    return rawData; 
 };

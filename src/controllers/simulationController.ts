@@ -74,6 +74,7 @@ export const getSimulationResults = async (req: Request, res: Response): Promise
             parseInt(gridId as string)
         );
 
+        console.log("PROCESSED RESULT SENT TO CLIENT:", JSON.stringify(data, null, 2));
         res.status(200).json({ success: true, data });
     } catch (error) {
         console.error('Error fetching results:', error);
