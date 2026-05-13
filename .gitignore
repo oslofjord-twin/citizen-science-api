@@ -1,8 +1,14 @@
 # Dependencies
 node_modules/
 
-# Environment variables
+# Environment variables (contain secrets — only .env.example is tracked)
 .env
+.env.development
+.env.production
+.env.local
+
+# Local user uploads (lived in S3/MinIO in real deployments)
+public/uploads/
 
 # TypeScript compiled files
 *.d.ts

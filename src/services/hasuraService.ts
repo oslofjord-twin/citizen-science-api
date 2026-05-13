@@ -56,26 +56,19 @@ export const insertSecchiDepth = async (data: InsertSecchiDepthData) => {
     }
   `;
 
-  try {
-    const result = await client.request(mutation, {
-      depth_m: data.depth_m,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      record_time: data.record_time,
-      source: data.source || 'citizen-science',
-      quality: data.quality || null,
-      note: data.note || null,
-      grid_id: data.grid_id || null,
-    });
+  const result = await client.request(mutation, {
+    depth_m: data.depth_m,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    record_time: data.record_time,
+    source: data.source || 'citizen-science',
+    quality: data.quality || null,
+    note: data.note || null,
+    grid_id: data.grid_id || null,
+  });
 
-    console.log('[Hasura] Successfully inserted Secchi depth:', result);
-    return result;
-  } catch (error) {
-    console.error('[Hasura] Error inserting Secchi depth:', error);
-    // Don't throw - we don't want to fail the citizen science measurement if Hasura is down
-    // Log the error but continue
-    return null;
-  }
+  console.log('[Hasura] Successfully inserted Secchi depth:', result);
+  return result;
 };
 
 /**

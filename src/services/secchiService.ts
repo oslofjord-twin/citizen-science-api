@@ -80,11 +80,10 @@ export const createSecchiMeasurement = async (data: CreateSecchiMeasurementData)
     await client.query("COMMIT");
 
     // 6. Forward measurement to digital twin (Hasura GraphQL API)
-    // This happens after commit so the citizen science measurement is saved even if Hasura fails
+    // Runs after commit so the citizen science record is always saved regardless of twin status.
+    let twinSync: { ok: boolean; error?: string } = { ok: false };
     try {
-      // Optionally find the grid_id for the location
       const gridId = await findGridIdForLocation(data.latitude, data.longitude);
-
       await insertSecchiDepth({
         depth_m: data.secchi_depth,
         latitude: data.latitude,
@@ -95,16 +94,29 @@ export const createSecchiMeasurement = async (data: CreateSecchiMeasurementData)
         note: data.notes || data.image_key ? `Citizen science measurement. ${data.notes || ''}${data.image_key ? ` Image: ${data.image_key}` : ''}`.trim() : undefined,
         grid_id: gridId || undefined,
       });
-    } catch (hasuraError) {
-      // Log but don't fail the request - citizen science measurement was already saved
-      console.error('[Secchi Service] Failed to forward to digital twin:', hasuraError);
+      twinSync = { ok: true };
+    } catch (hasuraError: any) {
+      const msg = hasuraError?.message ?? String(hasuraError);
+      console.error('[Secchi Service] Failed to forward to digital twin:', msg);
+      twinSync = { ok: false, error: msg };
     }
+
+    const pipeline = {
+      citizen_science_saved: true,
+      twin_sync: twinSync.ok,
+      ...(twinSync.ok ? {} : { twin_sync_error: twinSync.error }),
+      image_uploaded: !!data.image_key,
+      image_key: data.image_key ?? null,
+    };
+
+    console.log(`[Secchi] id=${sharedId} pipeline:`, pipeline);
 
     return {
       ...measurementResult.rows[0],
       secchi_data: secchiResult.rows[0],
       points_earned: pointsEarned,
       total_points: userTotals.rows[0]?.total_points ?? null,
+      pipeline,
     };
   } catch (error) {
     await client.query("ROLLBACK");

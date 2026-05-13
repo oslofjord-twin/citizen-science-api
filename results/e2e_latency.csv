@@ -1,0 +1,7 @@
+stage,n,median_ms,p95_ms,host
+predict,9,93.68,231.02,arm-beast/aarch64
+upload_request,9,2.95,3.4,arm-beast/aarch64
+s3_put,9,13.3,46.41,arm-beast/aarch64
+upload_complete,9,5.05,6.08,arm-beast/aarch64
+measurement,9,406.67,575.12,arm-beast/aarch64
+total,9,490.63,861.48,arm-beast/aarch64

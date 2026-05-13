@@ -50,20 +50,36 @@ const getDefaults = () => {
 
 export const predictSecchiFromImagePath = async (imagePath: string): Promise<SecchiPrediction> => {
   const { pythonCmd, predictScript, modelDir, device, timeoutMs } = getDefaults();
+  const gateUrl = process.env.SECCHI_GATE_URL;
 
-  const args = [
-    predictScript,
-    "--model-dir",
-    modelDir,
-    "--input",
-    imagePath,
-    "--device",
-    device,
-    "--format",
-    "json",
-  ];
-
-  const { stdout } = await execFileAsync(pythonCmd, args, { timeoutMs });
+  let stdout: string;
+  if (gateUrl) {
+    // Warm-worker path — see imageInferenceService.ts for the rationale.
+    const resp = await fetch(`${gateUrl.replace(/\/$/, "")}/classify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image_path: imagePath }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    const text = await resp.text();
+    if (!resp.ok) {
+      throw new Error(`Secchi predictor worker returned ${resp.status}: ${text.slice(0, 500)}`);
+    }
+    stdout = text;
+  } else {
+    const args = [
+      predictScript,
+      "--model-dir",
+      modelDir,
+      "--input",
+      imagePath,
+      "--device",
+      device,
+      "--format",
+      "json",
+    ];
+    ({ stdout } = await execFileAsync(pythonCmd, args, { timeoutMs }));
+  }
 
   let parsed: unknown;
   try {

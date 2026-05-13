@@ -1,5 +1,8 @@
-import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createWriteStream } from "fs";
+import { pipeline } from "stream/promises";
+import { Readable } from "stream";
 
 export interface PresignedPut {
   url: string;
@@ -108,6 +111,22 @@ export const headObject = async (params: { key: string }): Promise<HeadObjectRes
     eTag: result.ETag,
     lastModified: result.LastModified,
   };
+};
+
+export const downloadToFile = async (params: { key: string; destPath: string }): Promise<void> => {
+  const { client, bucket } = getS3Client();
+  const result = await client.send(
+    new GetObjectCommand({ Bucket: bucket, Key: params.key })
+  );
+
+  const body = result.Body;
+  if (!body) {
+    throw new Error(`Empty body for object ${params.key}`);
+  }
+
+  // AWS SDK v3 returns a Node.js Readable in the Node runtime.
+  const stream = body as Readable;
+  await pipeline(stream, createWriteStream(params.destPath));
 };
 
 export const deleteObject = async (params: { key: string }): Promise<void> => {

@@ -1,6 +1,26 @@
 To build the api: npm run build
 To restart pm2 server: pm2 restart citizen-science-api
 
+## Startup
+
+`npm start` starts the warm Secchi gate worker first, waits for `/health`, then
+starts the API with `SECCHI_GATE_URL` pointed at that worker.
+
+Useful modes:
+
+```bash
+npm start                         # gate worker + API
+npm run gate                      # gate worker only
+npm run api                       # API only; no gate worker
+SECCHI_START_GATE=false npm start # API with per-request inference fallback
+```
+
+The startup script defaults to `../sort/.venv/bin/python`,
+`../sort/gate_server.py`, `../sort/models`, host `127.0.0.1`, port `8765`, and
+CPU. Override with `SECCHI_GATE_PYTHON`, `SECCHI_GATE_SERVER`,
+`SECCHI_MODEL_DIR`, `SECCHI_GATE_HOST`, `SECCHI_GATE_PORT`, `SECCHI_DEVICE`, or
+set `SECCHI_GATE_URL` to use an already-running external worker.
+
 ## Environment Configuration
 
 **Development (local with MinIO):**
@@ -42,4 +62,3 @@ curl -X POST "$API_URL/api/secchi/uploads/complete" \
 	-H "Cookie: <your-auth-cookie>" \
 	-d '{"key":"secchi/raw/<user>/<yyyy>/<mm>/<uuid>.jpg"}'
 ```
-

@@ -69,7 +69,17 @@ app.get("/health", (req, res) => {
   res.send("OK");
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
+const port = process.env.PORT || 3001;
+const server = app.listen(port, () => {
   console.log(`Better Auth server running on port ${port}`);
 });
+
+const shutdown = (signal: string) => {
+  console.log(`Received ${signal}, shutting down`);
+  server.close(() => {
+    process.exit(0);
+  });
+};
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
