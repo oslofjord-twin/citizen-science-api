@@ -1,7 +1,0 @@
-CREATE TABLE IF NOT EXISTS secchi_data (
-  id TEXT PRIMARY KEY REFERENCES measurements(id) ON DELETE CASCADE,
-  secchi_depth DOUBLE PRECISION NOT NULL,
-  image_key TEXT, -- S3 object key
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);

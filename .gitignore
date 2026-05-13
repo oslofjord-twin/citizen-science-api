@@ -10,6 +10,9 @@ node_modules/
 # Local user uploads (lived in S3/MinIO in real deployments)
 public/uploads/
 
+# Local DB migrations (not tracked in this repo)
+better-auth_migrations/
+
 # TypeScript compiled files
 *.d.ts
 *.js
