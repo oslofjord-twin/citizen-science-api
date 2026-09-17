@@ -1,6 +1,33 @@
 import { describe, it } from "vitest";
 import fc from "fast-check";
-import { calculatePoints } from "../../src/services/temperaturePointsService";
+import {
+	calculatePoints,
+	calculateLevel,
+} from "../../src/services/temperaturePointsService";
+
+describe("calculateLevel", () => {
+	/*
+    it("calculateLevel should always return only zero or more", () => {
+		fc.assert(
+			fc.property(fc.double(), (points) => {
+				return calculateLevel(points) >= 0;
+			}),
+		);
+	});
+
+	it("calculateLevel should return higher level the more points", () => {
+		fc.assert(fc.property(fc.double(), (points) => {}));
+	});
+
+	it("calculateLevel should require more points to get to the next level", () => {
+		fc.assert(fc.property(fc.double(), (points) => {}));
+	});
+
+	it("calculateLevel should handle pos/neg infinite points", () => {
+		fc.assert(fc.property(fc.double(), (points) => {}));
+	});
+    */
+});
 
 describe("calculatePoints", () => {
 	it("calculatePoints should return base value when receiving zero depth", () => {
