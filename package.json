@@ -6,12 +6,13 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsc",
-		"start": "node dist/server.ts",
+		"start": "node dist/server.js",
 		"dev": "ts-node server.ts",
-		"test": "vitest",
-		"test:example": "vitest ./example-based",
-		"test:property": "vitest ./property-based",
-		"test:coverage": "vitest --coverage"
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:example": "vitest run tests/example-based",
+		"test:property": "vitest run tests/property-based",
+		"test:coverage": "vitest run --coverage"
 	},
 	"keywords": [],
 	"author": "",
