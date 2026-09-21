@@ -3,9 +3,13 @@ node_modules/
 
 # Environment variables
 .env
+.env.test
 
 # TypeScript compiled files
 *.d.ts
 *.js
 *.js.map
 dist/
+
+# Test coverage
+coverage/
