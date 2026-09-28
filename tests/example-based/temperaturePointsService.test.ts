@@ -1,31 +1,33 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, afterAll } from "vitest";
+import workerpool from "workerpool";
 import {
 	calculatePoints,
 	calculateLevel,
 } from "../../src/services/temperaturePointsService";
 
+const pool = workerpool.pool();
+afterAll(() => pool.terminate());
+
 describe("calculateLevel", () => {
-	it("calculateLevel should always return only zero or more", () => {
-		expect(calculateLevel(-1000000)).greaterThanOrEqual(0);
+	it("should always return only zero or more", () => {
+		expect(calculateLevel(-10000000)).greaterThanOrEqual(0);
 	});
 
-	it("calculateLevel should return a higher level the more points", () => {
+	it("should return a higher level the more points", () => {
 		const pointValues = [1, 10, 100, 1000, 10000, 100000];
 		const mappedValues = pointValues.map((points) => {
 			return calculateLevel(points);
 		});
 
-		expect(
-			[0, 1, 2, 3, 4].every((index) => {
-				return (
-					mappedValues[index] <=
-					mappedValues[index + 1]
-				);
-			}),
-		).toBe(true);
+		mappedValues.slice(1).forEach((level, i) => {
+			expect(
+				level,
+				`points at level ${pointValues[i + 1]} should exceed points at level ${pointValues[i]}`,
+			).toBeGreaterThanOrEqual(mappedValues[i]);
+		});
 	});
 
-	it("calculateLevel should require more points to get to the next level", () => {
+	it("should require more points to get to the next level", () => {
 		const points = Array.from(
 			{ length: 1000 },
 			(_, index) => index,
@@ -47,26 +49,28 @@ describe("calculateLevel", () => {
 		levelsGrouped.slice(0, -1).forEach((count, index) => {
 			expect(
 				count,
-				`${count} points for level ${index} should exceed points for level ${index}`,
+				`${count} points for level ${index + 1} should exceed points for level ${index}`,
 			).toBeLessThan(levelsGrouped[index + 1]);
 		});
 	});
 
-	/*
-	it("calculateLevel should handle positive infinite points", () => {
-		const level = calculateLevel(Infinity);
+	it("should handle positive infinite points", async () => {
+		const level = await pool
+			.exec(calculateLevel, [Infinity])
+			.timeout(1000);
 
 		expect(level).toBeTypeOf("number");
 		expect(level).not.toBeNaN();
 	});
 
-	it("calculateLevel should handle negative infinite points", () => {
-		const level = calculateLevel(-Infinity);
+	it("should handle negative infinite points", async () => {
+		const level = await pool
+			.exec(calculateLevel, [-Infinity])
+			.timeout(1000);
 
 		expect(level).toBeTypeOf("number");
 		expect(level).not.toBeNaN();
 	});
-	*/
 });
 
 describe("calculatePoints", () => {
@@ -74,11 +78,11 @@ describe("calculatePoints", () => {
 		expect(calculatePoints(0)).toBe(5);
 	});
 
-	it("calculatePoints should always return more than zero points", () => {
+	it("should always return more than zero points", () => {
 		expect(calculatePoints(-1000000)).greaterThan(0);
 	});
 
-	it("calculatePoints should return more points the bigger the depth", () => {
+	it("should return more points the bigger the depth", () => {
 		const depthValues = [1, 10, 100, 1000, 10000, 100000];
 		const mappedValues = depthValues.map((depth) => {
 			return calculatePoints(depth);
@@ -94,14 +98,14 @@ describe("calculatePoints", () => {
 		).toBe(true);
 	});
 
-	it("caluclatePoints should handle positive infinite depth values", () => {
+	it("should handle positive infinite depth values", () => {
 		const points = calculatePoints(Infinity);
 
 		expect(points).toBeTypeOf("number");
 		expect(points).not.toBeNaN();
 	});
 
-	it("caluclatePoints should handle negative infinite depth values", () => {
+	it("should handle negative infinite depth values", () => {
 		const points = calculatePoints(-Infinity);
 
 		expect(points).toBeTypeOf("number");

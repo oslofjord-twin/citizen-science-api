@@ -7,3 +7,4 @@ To restart pm2 server:
 ### Main test branch
 This is the main test branch for the citizen science api
 
+Need 22.22 or older
