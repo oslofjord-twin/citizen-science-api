@@ -1,9 +1,16 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { createTemperatureMeasurement } from "../../../src/controllers/temperatureController";
-import { createResponse } from "../../utils/temperatureRequest";
-import * as temperatureService from "../../../src/services/temperatureService";
-import * as geoUtil from "../../../src/utils/geoUtil";
+import { createTemperatureMeasurement } from "../../src/controllers/temperatureController";
+import { createResponse } from "../utils/temperatureRequest";
+import * as temperatureService from "../../src/services/temperatureService";
+import * as geoUtil from "../../src/utils/geoUtil";
 import fc from "fast-check";
+import {
+	validRequestBody,
+	invalidRequestBody,
+	validUser,
+	invalidUser,
+	request,
+} from "./generators/temperatureController.generators";
 import type { Request } from "express";
 
 vi.mock("../../../src/services/temperatureService");
@@ -13,9 +20,7 @@ beforeEach(() => {
 	// Mocks
 	vi.clearAllMocks();
 	vi.mocked(geoUtil.isWithinOslofjord).mockReturnValue(true);
-	vi.mocked(
-		temperatureService.createTemperatureMeasurement,
-	).mockResolvedValue({
+	vi.mocked(temperatureService.createTemperatureMeasurement).mockResolvedValue({
 		points_earned: 5,
 		total_points: 50,
 		level: 2,
@@ -42,21 +47,11 @@ const BOUNDS = {
 	instrument_type: ["thermometer", undefined, ""],
 };
 
-const REQUIRED_FIELDS = [
-	"value_celsius",
-	"depth_meters",
-	"latitude",
-	"longitude",
-	"measurement_date",
-] as const;
+const REQUIRED_FIELDS = ["value_celsius", "depth_meters", "latitude", "longitude", "measurement_date"] as const;
 
-const inBound = ({ min, max }: { min: number; max: number }) =>
-	fc.double({ min: min, max: max });
+const inBound = ({ min, max }: { min: number; max: number }) => fc.double({ min: min, max: max });
 const outBound = ({ min, max }: { min: number; max: number }) =>
-	fc.oneof(
-		fc.double({ max: min, maxExcluded: true }),
-		fc.double({ min: max, minExcluded: true }),
-	);
+	fc.oneof(fc.double({ max: min, maxExcluded: true }), fc.double({ min: max, minExcluded: true }));
 
 const fieldArbs = {
 	value_celsius: inBound(BOUNDS.value_celsius),
@@ -69,10 +64,7 @@ const fieldArbs = {
 };
 
 const requestBody = (overrides: Record<string, unknown> = {}) =>
-	fc.record(
-		{ ...fieldArbs, ...overrides },
-		{ requiredKeys: [...REQUIRED_FIELDS] },
-	);
+	fc.record({ ...fieldArbs, ...overrides }, { requiredKeys: [...REQUIRED_FIELDS] });
 
 const requestUser = () => {
 	return fc.record(
@@ -92,13 +84,11 @@ const requestObj = ({
 } = {}) => fc.record({ body, user });
 
 const missingFieldRequestBody = () =>
-	fc
-		.tuple(requestBody(), fc.constantFrom(...REQUIRED_FIELDS))
-		.map(([req, field]) => {
-			const newReq = { ...req };
-			delete newReq[field];
-			return newReq;
-		});
+	fc.tuple(requestBody(), fc.constantFrom(...REQUIRED_FIELDS)).map(([req, field]) => {
+		const newReq = { ...req };
+		delete newReq[field];
+		return newReq;
+	});
 
 const invalidBodies: Array<[string, fc.Arbitrary<Record<string, unknown>>]> = [
 	[
@@ -138,9 +128,7 @@ const invalidBodies: Array<[string, fc.Arbitrary<Record<string, unknown>>]> = [
 		requestObj({
 			body: requestBody({
 				measurement_date: fc.date({
-					min: new Date(
-						Date.now() + 10 * 60 * 1000,
-					),
+					min: new Date(Date.now() + 10 * 60 * 1000),
 					noInvalidDate: false,
 				}),
 			}),
@@ -165,21 +153,14 @@ const invalidBodies: Array<[string, fc.Arbitrary<Record<string, unknown>>]> = [
 describe("createTemperatureMeasurement", () => {
 	it("should return a response with status 201", async () => {
 		await fc.assert(
-			fc.asyncProperty(requestObj(), async (req) => {
+			fc.asyncProperty(request(validRequestBody(Date.now()), validUser()), async (req) => {
 				const request = req as unknown as Request;
 				const response = createResponse();
 
-				await createTemperatureMeasurement(
-					request,
-					response,
-				);
+				await createTemperatureMeasurement(request, response);
 
-				expect(response.status).toHaveBeenCalledWith(
-					201,
-				);
-				expect(
-					temperatureService.createTemperatureMeasurement,
-				).toHaveBeenCalledTimes(1);
+				expect(response.status).toHaveBeenCalledWith(201);
+				expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(1);
 			}),
 			{
 				verbose: 0,
@@ -192,61 +173,39 @@ describe("createTemperatureMeasurement", () => {
 		);
 	});
 
-	it.each(invalidBodies)(
-		"should reject %s with status 400",
-		async (_desc, invalidBody) => {
-			await fc.assert(
-				fc.asyncProperty(invalidBody, async (req) => {
-					const request =
-						req as unknown as Request;
-					const response = createResponse();
+	it.each(invalidBodies)("should reject %s with status 400", async (_desc, invalidBody) => {
+		await fc.assert(
+			fc.asyncProperty(request(invalidRequestBody(Date.now()), validUser()), async (req) => {
+				const request = req as unknown as Request;
+				const response = createResponse();
 
-					await createTemperatureMeasurement(
-						request,
-						response,
-					);
+				await createTemperatureMeasurement(request, response);
 
-					expect(
-						response.status,
-					).toHaveBeenCalledWith(400);
-					expect(
-						temperatureService.createTemperatureMeasurement,
-					).toHaveBeenCalledTimes(1);
-				}),
-				{
-					verbose: 0,
-					plugins: [
-						fc.beforeEach(() => {
-							vi.clearAllMocks();
-						}),
-					],
-				},
-			);
-		},
-	);
+				expect(response.status).toHaveBeenCalledWith(400);
+				expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(1);
+			}),
+			{
+				verbose: 0,
+				plugins: [
+					fc.beforeEach(() => {
+						vi.clearAllMocks();
+					}),
+				],
+			},
+		);
+	});
 
 	it("should return a response with status 401 with invalid user", async () => {
 		await fc.assert(
-			fc.asyncProperty(
-				requestObj({ user: undefined }),
-				async (req) => {
-					const request =
-						req as unknown as Request;
-					const response = createResponse();
+			fc.asyncProperty(request(validRequestBody(Date.now()), invalidUser()), async (req) => {
+				const request = req as unknown as Request;
+				const response = createResponse();
 
-					await createTemperatureMeasurement(
-						request,
-						response,
-					);
+				await createTemperatureMeasurement(request, response);
 
-					expect(
-						response.status,
-					).toHaveBeenCalledWith(400);
-					expect(
-						temperatureService.createTemperatureMeasurement,
-					).toHaveBeenCalledTimes(1);
-				},
-			),
+				expect(response.status).toHaveBeenCalledWith(400);
+				expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(1);
+			}),
 			{
 				verbose: 0,
 				plugins: [
