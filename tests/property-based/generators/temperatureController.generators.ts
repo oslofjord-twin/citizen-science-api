@@ -142,18 +142,21 @@ abstract class TemperatureBodyArbitrary extends Arbitrary<Body> {
 
 		for (const key of NUM_FIELDS) {
 			const val = body[key] as number;
+			if (typeof val !== "number") continue;
 			const simplest = 0;
 			for (const target of this.towards(val, this.target(BOUNDS[key], val, simplest), acc)) {
 				yield { ...body, [key]: target };
 			}
 		}
 
-		const time = (body.measurement_date as Date).getTime();
-		for (const target of this.towards(time, this.target(this.dateRange(), time, this.now, 1), 1)) {
-			yield { ...body, ["measurement_date"]: new Date(Math.round(target)) };
+		if (body.measurement_date instanceof Date) {
+			const time = (body.measurement_date as Date).getTime();
+			for (const target of this.towards(time, this.target(this.dateRange(), time, this.now, 1), 1)) {
+				yield { ...body, ["measurement_date"]: new Date(Math.round(target)) };
+			}
 		}
 
-		// generate notes and instrument
+		// TODO generate notes and instrument
 	}
 
 	shrink(value: Body): Stream<Value<Body>> {
@@ -182,8 +185,11 @@ class InvalidTemperatureBodyArbitrary extends TemperatureBodyArbitrary {
 
 	generate(mrng: Random, biasFactor: number | undefined): Value<Body> {
 		const body = this.validBody(mrng, biasFactor);
-		const field = fields[mrng.nextInt(0, fields.length - 1)];
+		const field = ["missing_required", ...fields][mrng.nextInt(0, fields.length)];
 		switch (field) {
+			case "missing_required":
+				delete body[REQUIRED[mrng.nextInt(0, REQUIRED.length - 1)]];
+				break;
 			case "value_celsius":
 				body.value_celsius = outBound(mrng, biasFactor, BOUNDS.value_celsius);
 				break;
@@ -239,10 +245,15 @@ export const invalidUser = () =>
 		),
 	);
 
+const dateMapping = (body: Body) =>
+	body.measurement_date instanceof Date
+		? { ...body, measurement_date: body.measurement_date.toISOString() }
+		: body;
+
 export const request = (body: Arbitrary<Body>, user: Arbitrary<Body | undefined>) =>
 	fc.record(
 		{
-			body: body,
+			body: body.map(dateMapping),
 			user: user,
 		},
 		{ noNullPrototype: true },

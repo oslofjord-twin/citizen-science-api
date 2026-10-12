@@ -11,12 +11,12 @@ import {
 	invalidUser,
 	request,
 } from "./generators/temperatureController.generators";
+import { validBodyRequestsGet201Response } from "./properties/temperatureController.properties";
 import type { Request } from "express";
+import { NOW } from "../utils/date";
 
 vi.mock("../../src/services/temperatureService");
 vi.mock("../../src/utils/geoUtil");
-
-const NOW = Date.UTC(2026, 0, 1, 0);
 
 beforeEach(() => {
 	// Mocks
@@ -47,17 +47,7 @@ const settings = {
 
 describe("createTemperatureMeasurement", () => {
 	it("should return a response with status 201", async () => {
-		await fc.assert(
-			fc.asyncProperty(request(validRequestBody(NOW), validUser()), async (req) => {
-				const request = req as unknown as Request;
-				const response = createResponse();
-
-				await createTemperatureMeasurement(request, response);
-
-				expect(response.status).toHaveBeenCalledWith(201);
-			}),
-			settings,
-		);
+		await fc.assert(validBodyRequestsGet201Response, settings);
 	});
 
 	it("should reject invalid bodies with status 400", async () => {
