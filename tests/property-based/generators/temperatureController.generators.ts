@@ -51,11 +51,6 @@ const outBound = (
 			? nextDouble(mrng, { min: min - spread, max: min - acc })
 			: nextDouble(mrng, { min: max + acc, max: max + spread });
 
-const requestUser = () =>
-	fc.record({
-		id: fc.uuid(),
-	});
-
 abstract class TemperatureBodyArbitrary extends Arbitrary<Body> {
 	constructor(protected readonly now: number) {
 		super();
@@ -238,11 +233,17 @@ export const invalidUser = () =>
 	fc.oneof(
 		fc.constant(undefined),
 		fc.constant({}),
-		fc.record({ id: fc.oneof(fc.constantFrom(null, undefined, 42, ""), fc.string()) }),
+		fc.record(
+			{ id: fc.oneof(fc.constantFrom(null, undefined, 42, ""), fc.string()) },
+			{ noNullPrototype: true },
+		),
 	);
 
 export const request = (body: Arbitrary<Body>, user: Arbitrary<Body | undefined>) =>
-	fc.record({
-		body: body,
-		user: user,
-	});
+	fc.record(
+		{
+			body: body,
+			user: user,
+		},
+		{ noNullPrototype: true },
+	);

@@ -12,7 +12,7 @@ import {
 
 const settings = {
 	timeout: 1000,
-	verbose: 2,
+	verbose: 1,
 };
 
 describe("calculateLevel", { timeout: 10000 }, () => {

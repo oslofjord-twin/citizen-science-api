@@ -8,20 +8,20 @@ import * as geoUtil from "../../src/utils/geoUtil";
 vi.mock("../../../src/services/temperatureService");
 vi.mock("../../../src/utils/geoUtil");
 
+const NOW = Date.UTC(2026, 0, 1, 0);
+
 beforeEach(() => {
 	// Mocks
 	vi.clearAllMocks();
 	vi.mocked(geoUtil.isWithinOslofjord).mockReturnValue(true);
-	vi.mocked(
-		temperatureService.createTemperatureMeasurement,
-	).mockResolvedValue({
+	vi.mocked(temperatureService.createTemperatureMeasurement).mockResolvedValue({
 		points_earned: 5,
 		total_points: 50,
 		level: 2,
 	} as any);
 
 	vi.useFakeTimers();
-	vi.setSystemTime(new Date());
+	vi.setSystemTime(new Date(NOW));
 });
 
 afterEach(() => {
@@ -32,8 +32,7 @@ describe("createTemperatureMeasurement", () => {
 	// Temperature field
 	for (const temperature of [-50, 0, 100]) {
 		it(`should accept ${temperature} degrees Celsius`, async () => {
-			const request =
-				createRequest().withTemperature(temperature);
+			const request = createRequest().withTemperature(temperature);
 			const response = createResponse();
 
 			await createTemperatureMeasurement(request, response);
@@ -42,17 +41,9 @@ describe("createTemperatureMeasurement", () => {
 		});
 	}
 
-	for (const temperature of [
-		-Infinity,
-		-500,
-		-50.1,
-		100.1,
-		500,
-		Infinity,
-	]) {
+	for (const temperature of [-Infinity, -500, -50.1, 100.1, 500, Infinity]) {
 		it(`should reject ${temperature} degrees Celsius`, async () => {
-			const request =
-				createRequest().withTemperature(temperature);
+			const request = createRequest().withTemperature(temperature);
 			const response = createResponse();
 
 			await createTemperatureMeasurement(request, response);
@@ -142,9 +133,7 @@ describe("createTemperatureMeasurement", () => {
 		[-0, -0],
 	]) {
 		it(`should accept latitude ${latitude} and longitude ${longitude}`, async () => {
-			const request = createRequest()
-				.withLatitude(latitude)
-				.withLongitude(longitude);
+			const request = createRequest().withLatitude(latitude).withLongitude(longitude);
 			const response = createResponse();
 
 			await createTemperatureMeasurement(request, response);
@@ -169,9 +158,7 @@ describe("createTemperatureMeasurement", () => {
 		[undefined, undefined],
 	]) {
 		it(`should reject latitude ${latitude} and longitude ${longitude}`, async () => {
-			const request = createRequest()
-				.withLatitude(latitude)
-				.withLongitude(longitude);
+			const request = createRequest().withLatitude(latitude).withLongitude(longitude);
 			const response = createResponse();
 
 			await createTemperatureMeasurement(request, response);
@@ -181,11 +168,7 @@ describe("createTemperatureMeasurement", () => {
 	}
 
 	// Date field
-	for (const date of [
-		msFromNow(0),
-		msFromNow(-1000),
-		msFromNow(-100000),
-	]) {
+	for (const date of [msFromNow(0), msFromNow(-1000), msFromNow(-100000)]) {
 		it(`should accept date ${date}`, async () => {
 			const request = createRequest().withDate(date);
 			const response = createResponse();

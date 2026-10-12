@@ -16,6 +16,8 @@ import type { Request } from "express";
 vi.mock("../../src/services/temperatureService");
 vi.mock("../../src/utils/geoUtil");
 
+const NOW = Date.UTC(2026, 0, 1, 0);
+
 beforeEach(() => {
 	// Mocks
 	vi.clearAllMocks();
@@ -27,17 +29,26 @@ beforeEach(() => {
 	} as any);
 
 	vi.useFakeTimers();
-	vi.setSystemTime(new Date());
+	vi.setSystemTime(NOW);
 });
 
 afterEach(() => {
 	vi.useRealTimers();
 });
 
+const settings = {
+	verbose: 1,
+	plugins: [
+		fc.beforeEach(() => {
+			vi.clearAllMocks();
+		}),
+	],
+};
+
 describe("createTemperatureMeasurement", () => {
 	it("should return a response with status 201", async () => {
 		await fc.assert(
-			fc.asyncProperty(request(validRequestBody(Date.now()), validUser()), async (req) => {
+			fc.asyncProperty(request(validRequestBody(NOW), validUser()), async (req) => {
 				const request = req as unknown as Request;
 				const response = createResponse();
 
@@ -45,20 +56,13 @@ describe("createTemperatureMeasurement", () => {
 
 				expect(response.status).toHaveBeenCalledWith(201);
 			}),
-			{
-				verbose: 0,
-				plugins: [
-					fc.beforeEach(() => {
-						vi.clearAllMocks();
-					}),
-				],
-			},
+			settings,
 		);
 	});
 
 	it("should reject invalid bodies with status 400", async () => {
 		await fc.assert(
-			fc.asyncProperty(request(invalidRequestBody(Date.now()), validUser()), async (req) => {
+			fc.asyncProperty(request(invalidRequestBody(NOW), validUser()), async (req) => {
 				const request = req as unknown as Request;
 				const response = createResponse();
 
@@ -66,20 +70,13 @@ describe("createTemperatureMeasurement", () => {
 
 				expect(response.status).toHaveBeenCalledWith(400);
 			}),
-			{
-				verbose: 0,
-				plugins: [
-					fc.beforeEach(() => {
-						vi.clearAllMocks();
-					}),
-				],
-			},
+			settings,
 		);
 	});
 
 	it("should return a response with status 401 with invalid user", async () => {
 		await fc.assert(
-			fc.asyncProperty(request(validRequestBody(Date.now()), invalidUser()), async (req) => {
+			fc.asyncProperty(request(validRequestBody(NOW), invalidUser()), async (req) => {
 				const request = req as unknown as Request;
 				const response = createResponse();
 
@@ -88,14 +85,7 @@ describe("createTemperatureMeasurement", () => {
 				expect(response.status).toHaveBeenCalledWith(400);
 				expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(1);
 			}),
-			{
-				verbose: 0,
-				plugins: [
-					fc.beforeEach(() => {
-						vi.clearAllMocks();
-					}),
-				],
-			},
+			settings,
 		);
 	});
 });

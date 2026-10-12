@@ -14,9 +14,7 @@ export interface CreateTemperatureMeasurementData {
 	notes?: string;
 }
 
-export const createTemperatureMeasurement = async (
-	data: CreateTemperatureMeasurementData,
-) => {
+export const createTemperatureMeasurement = async (data: CreateTemperatureMeasurementData) => {
 	const client = await pool.connect();
 
 	try {
@@ -24,11 +22,7 @@ export const createTemperatureMeasurement = async (
 
 		const sharedId = uuidv4();
 
-		const gamification = await temperaturePointsService.awardPoints(
-			client,
-			data.userId,
-			data.depth_meters,
-		);
+		const gamification = await temperaturePointsService.awardPoints(client, data.userId, data.depth_meters);
 
 		const measurementResult = await client.query(
 			`
