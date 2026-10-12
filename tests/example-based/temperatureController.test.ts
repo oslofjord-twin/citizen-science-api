@@ -1,14 +1,16 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createTemperatureMeasurement } from "../../src/controllers/temperatureController";
-import { createResponse, createRequest } from "../utils/temperatureRequest";
+import { createResponse, createRequest, REQUIRED } from "../utils/temperatureRequest";
 import { msFromNow } from "../utils/date";
 import * as temperatureService from "../../src/services/temperatureService";
 import * as geoUtil from "../../src/utils/geoUtil";
 
-vi.mock("../../../src/services/temperatureService");
-vi.mock("../../../src/utils/geoUtil");
+vi.mock("../../src/services/temperatureService");
+vi.mock("../../src/utils/geoUtil");
 
 const NOW = Date.UTC(2026, 0, 1, 0);
+
+// consider making this into a accept / reject loop instead of per field loop
 
 beforeEach(() => {
 	// Mocks
@@ -49,6 +51,7 @@ describe("createTemperatureMeasurement", () => {
 			await createTemperatureMeasurement(request, response);
 
 			expect(response.status).toHaveBeenCalledWith(400);
+			expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(0);
 		});
 	}
 
@@ -59,6 +62,7 @@ describe("createTemperatureMeasurement", () => {
 		await createTemperatureMeasurement(request, response);
 
 		expect(response.status).toHaveBeenCalledWith(400);
+		expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(0);
 	});
 
 	// Depth meter field (current limit 200m)
@@ -81,6 +85,7 @@ describe("createTemperatureMeasurement", () => {
 			await createTemperatureMeasurement(request, response);
 
 			expect(response.status).toHaveBeenCalledWith(400);
+			expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(0);
 		});
 	}
 
@@ -91,6 +96,7 @@ describe("createTemperatureMeasurement", () => {
 		await createTemperatureMeasurement(request, response);
 
 		expect(response.status).toHaveBeenCalledWith(400);
+		expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(0);
 	});
 
 	// Instrument field
@@ -119,6 +125,7 @@ describe("createTemperatureMeasurement", () => {
 		await createTemperatureMeasurement(request, response);
 
 		expect(response.status).toHaveBeenCalledWith(400);
+		expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(0);
 	});
 
 	// Latitude and Longitude
@@ -164,6 +171,7 @@ describe("createTemperatureMeasurement", () => {
 			await createTemperatureMeasurement(request, response);
 
 			expect(response.status).toHaveBeenCalledWith(400);
+			expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(0);
 		});
 	}
 
@@ -195,6 +203,20 @@ describe("createTemperatureMeasurement", () => {
 			await createTemperatureMeasurement(request, response);
 
 			expect(response.status).toHaveBeenCalledWith(400);
+			expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(0);
+		});
+	}
+
+	// Missing required field
+	for (const field of REQUIRED) {
+		it(`should reject missing ${field} field`, async () => {
+			const request = createRequest().without(field);
+			const response = createResponse();
+
+			await createTemperatureMeasurement(request, response);
+
+			expect(response.status).toHaveBeenCalledWith(400);
+			expect(temperatureService.createTemperatureMeasurement).toHaveBeenCalledTimes(0);
 		});
 	}
 });

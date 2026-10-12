@@ -1,6 +1,10 @@
 import { vi } from "vitest";
 import type { Request, Response } from "express";
 
+export const REQUIRED = ["value_ceslius", "latitude", "longitude", "measurement_date"] as const;
+export const OPTIONAL = ["instrument_type", "notes"] as const;
+export const FIELDS = [...REQUIRED, ...OPTIONAL] as const;
+
 export const createResponse = () => {
 	const res = {
 		status: vi.fn().mockName("res.status"),
@@ -44,11 +48,6 @@ class TemperatureRequestBuilder {
 		return this;
 	}
 
-	withInstrument(instrumentType: unknown): this {
-		this.body.instrument_type = instrumentType;
-		return this;
-	}
-
 	withLatitude(latitude: unknown): this {
 		this.body.latitude = latitude;
 		return this;
@@ -64,11 +63,22 @@ class TemperatureRequestBuilder {
 		return this;
 	}
 
+	withInstrument(instrumentType: unknown): this {
+		this.body.instrument_type = instrumentType;
+		return this;
+	}
+
 	withNotes(notes: unknown): this {
 		this.body.notes = notes;
 		return this;
 	}
+
+	without(
+		field: "value_ceslius" | "latitude" | "longitude" | "measurement_date" | "instrument_type" | "notes",
+	): this {
+		delete this.body[field];
+		return this;
+	}
 }
 
-export const createRequest = () =>
-	new TemperatureRequestBuilder() as TemperatureRequestBuilder & Request;
+export const createRequest = () => new TemperatureRequestBuilder() as TemperatureRequestBuilder & Request;
