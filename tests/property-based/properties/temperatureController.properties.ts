@@ -1,6 +1,6 @@
 import { expect } from "vitest";
 import { createTemperatureMeasurement } from "../../../src/controllers/temperatureController";
-import { createResponse } from "../../utils/temperatureRequest";
+import { createResponse } from "../../utils/temperatureRequestBuilder";
 import * as temperatureService from "../../../src/services/temperatureService";
 import {
 	validRequestBody,

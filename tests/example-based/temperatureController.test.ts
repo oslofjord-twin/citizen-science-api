@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createTemperatureMeasurement } from "../../src/controllers/temperatureController";
-import { createResponse, createRequest, REQUIRED } from "../utils/temperatureRequest";
+import { createResponse, createRequest, REQUIRED } from "../utils/temperatureRequestBuilder";
 import { msFromNow } from "../utils/date";
 import * as temperatureService from "../../src/services/temperatureService";
 import * as geoUtil from "../../src/utils/geoUtil";
