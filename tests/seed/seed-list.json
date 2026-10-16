@@ -1,0 +1,10 @@
+[
+	{
+		"name": "users",
+		"priority": 0
+	},
+	{
+		"name": "achievements",
+		"priority": 0
+	}
+]
