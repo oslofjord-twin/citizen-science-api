@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 export const readCsv = <T>(dir: string, name: string) => {
-	const csvData = readFileSync(join(dir, name + ".csv"), "utf-8");
+	const csvData = readFileSync(join(dir, name), "utf-8");
 
 	const { data, meta } = Papa.parse<T>(csvData, {
 		header: true,

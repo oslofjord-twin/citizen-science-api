@@ -19,6 +19,7 @@ async function getTableNames() {
 }
 
 export async function seed(c: Client) {
+	checkEnv();
 	const allTables = await getTableNames();
 
 	for (const name of allTables) {
@@ -29,7 +30,14 @@ export async function seed(c: Client) {
 }
 
 export async function empty(c: Client) {
+	checkEnv();
 	const { rows } = await c.query(`SELECT tablename FROM pg_tables WHERE schemaname='public'`);
 	const tableNames = rows.map((row) => `"${row.tablename}"`).join(", ");
 	if (tableNames) await c.query(`TRUNCATE ${tableNames} RESTART IDENTITY CASCADE`);
+}
+
+function checkEnv() {
+	if (!process.env.DATABASE_URL?.includes("testdb")) {
+		throw new Error(`Probably shouldn't run these commands on production :)`);
+	}
 }

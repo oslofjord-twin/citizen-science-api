@@ -14,8 +14,7 @@ services:
 
   tests:
     build: .
-    environment:
-      DATABASE_URL: postgres://testuser:testpass@db:5432/testdb
+    env_file: .env.test
     depends_on:
       db:
         condition: service_healthy
