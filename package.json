@@ -8,11 +8,11 @@
 		"build": "tsc",
 		"start": "node dist/server.js",
 		"dev": "ts-node server.ts",
-		"test": "vitest run",
+		"test": "./scripts/docker-test.sh",
 		"test:watch": "vitest",
-		"test:example": "vitest run tests/example-based/**",
-		"test:property": "vitest run tests/property-based/**",
-		"test:coverage": "vitest run --coverage"
+		"test:example": "./scripts/docker-test.sh tests/example-based",
+		"test:property": "./scripts/docker-test.sh tests/property-based/",
+		"test:coverage": "./scripts/docker-test.sh --coverage"
 	},
 	"keywords": [],
 	"author": "",
@@ -21,6 +21,7 @@
 		"@fast-check/vitest": "^0.5.0",
 		"@types/express": "^5.0.3",
 		"@types/node": "^24.5.2",
+		"@types/papaparse": "^5.5.2",
 		"@types/pg": "^8.15.5",
 		"@vitest/coverage-v8": "^5.0.1",
 		"fast-check": "^4.10.2",
@@ -35,6 +36,7 @@
 		"better-auth": "^1.3.9",
 		"dotenv": "^17.2.2",
 		"express": "^5.1.0",
+		"papaparse": "^5.7.0",
 		"pg": "^8.16.3",
 		"piscina": "^5.3.2",
 		"uuid": "^14.0.2"

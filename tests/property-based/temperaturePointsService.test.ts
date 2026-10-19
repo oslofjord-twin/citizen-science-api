@@ -6,7 +6,7 @@ import {
 	levelRequiresMorePoints,
 	levelHandlesInfinity,
 	pointsReturnsBaseValueOrMore,
-	pointsIsAlwaysIncreases,
+	pointsAlwaysIncreases,
 	pointsHandlesInfinity,
 } from "./properties/temperaturePointsService.properties";
 
@@ -41,7 +41,7 @@ describe("calculatePoints", () => {
 	});
 
 	it("calculatePoints should return more points the bigger the depth", async () => {
-		await assert(pointsIsAlwaysIncreases, settings);
+		await assert(pointsAlwaysIncreases, settings);
 	});
 
 	it("caluclatePoints should handle pos/neg infinite depth values", async () => {

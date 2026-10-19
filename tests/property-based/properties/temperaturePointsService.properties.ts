@@ -33,7 +33,7 @@ export const pointsReturnsBaseValueOrMore = property(fc.double(), (depth) => {
 	return calculatePoints(depth) >= baseValue;
 });
 
-export const pointsIsAlwaysIncreases = property(fc.double(), fc.double({ min: 1 }), (depth, x) => {
+export const pointsAlwaysIncreases = property(fc.double(), fc.double({ min: 1 }), (depth, x) => {
 	return calculatePoints(depth + x) >= calculatePoints(depth);
 });
 

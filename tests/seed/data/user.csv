@@ -1,0 +1,3 @@
+id,name,email,emailVerified,image,createdAt,updatedAt,total_points,level,avatar_id,badge_id,failed_attempts,lockout_until
+5a105e8b9d40e1329780d62ea2265d8a,bob marley,bob-marley@gmail.com,t,,2026-01-01 12:00:00.000,2026-01-01 12:00:00.000,0,1,1,1,0,
+ad0234829205b9033196ba818f7a872b,alice cooper,alice-cooper@gmail.com,t,,2026-01-02 12:00:00.000,2026-01-02 12:00:00.000,0,1,2,1,0,
