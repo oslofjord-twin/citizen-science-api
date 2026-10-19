@@ -23,7 +23,7 @@ export async function seed(c: Client) {
 
 	for (const name of allTables) {
 		await c.query(`
-            COPY ${name} FROM '/seed/${name}/${name}.csv' WITH (FORMAT csv, HEADER match, ENCODING 'UTF8')
+            COPY "${name}" FROM '/seed/data/${name}.csv' WITH (FORMAT csv, HEADER match, ENCODING 'UTF8')
         `);
 	}
 }
