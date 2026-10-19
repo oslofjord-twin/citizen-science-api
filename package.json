@@ -11,7 +11,7 @@
 		"test": "./scripts/docker-test.sh",
 		"test:watch": "vitest",
 		"test:example": "./scripts/docker-test.sh tests/example-based",
-		"test:property": "./scripts/docker-test.sh tests/example-based/**",
+		"test:property": "./scripts/docker-test.sh tests/property-based/",
 		"test:coverage": "./scripts/docker-test.sh --coverage"
 	},
 	"keywords": [],
