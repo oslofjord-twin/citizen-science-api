@@ -1,8 +1,8 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-import { Client } from "pg";
+import { Client, Pool } from "pg";
 
-export async function createSchema(c: Client) {
+export async function createSchema(c: Client | Pool) {
 	const query = readFileSync(join(import.meta.dirname, "schema.sql"), "utf8");
 	await c.query(query);
 }
@@ -18,7 +18,7 @@ async function getTableNames() {
 	return seedList.map((table) => table.name);
 }
 
-export async function seed(c: Client) {
+export async function seed(c: Client | Pool) {
 	checkEnv();
 	const allTables = await getTableNames();
 
@@ -29,7 +29,7 @@ export async function seed(c: Client) {
 	}
 }
 
-export async function empty(c: Client) {
+export async function empty(c: Client | Pool) {
 	checkEnv();
 	const { rows } = await c.query(`SELECT tablename FROM pg_tables WHERE schemaname='public'`);
 	const tableNames = rows.map((row) => `"${row.tablename}"`).join(", ");

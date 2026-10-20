@@ -13,7 +13,7 @@ type Badge = {
 const { columns, rows } = readCsv(import.meta.dirname + "/../data", "badges.csv");
 
 const getBadgeById = (id: number) => {
-	const badge = (rows as Badge[]).find((row) => row.id === id);
+	const badge: Badge | undefined = (rows as Badge[]).find((row) => row.id === id);
 	if (!badge) throw new Error(`Could not find badge with id: ${id}`);
 	return badge;
 };

@@ -13,7 +13,7 @@ type Achievement = {
 const { columns, rows } = readCsv(import.meta.dirname + "/../data", "achievements.csv");
 
 const getAchievementById = (id: number) => {
-	const achievement = (rows as Achievement[]).find((row) => row.id === id);
+	const achievement: Achievement | undefined = (rows as Achievement[]).find((row) => row.id === id);
 	if (!achievement) throw new Error(`Could not find achievement with id: ${id}`);
 	return achievement;
 };

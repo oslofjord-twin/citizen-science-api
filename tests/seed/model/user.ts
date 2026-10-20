@@ -17,7 +17,7 @@ type User = {
 const { columns, rows } = readCsv(import.meta.dirname + "/../data", "user.csv");
 
 const getUserById = (id: string) => {
-	const user = (rows as User[]).find((row) => row.id === id);
+	const user: User | undefined = (rows as User[]).find((row) => row.id === id);
 	if (!user) throw new Error(`Could not find user with id: ${id}`);
 	return user;
 };

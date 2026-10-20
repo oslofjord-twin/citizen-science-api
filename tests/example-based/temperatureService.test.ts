@@ -1,39 +1,39 @@
-import { Client } from "pg";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { empty, seed } from "../seed/seed.ts";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { empty, seed } from "../seed/seed.js";
+import { pool } from "../../src/config/database.js";
 import { users } from "../seed/model/user.js";
-
-const client = new Client({ connectionString: process.env.DATABASE_URL });
-
-beforeAll(async () => {
-	await client.connect();
-});
+import {
+	createTemperatureMeasurement,
+	CreateTemperatureMeasurementData,
+} from "../../src/services/temperatureService.js";
+import { msFromNow } from "../utils/date.js";
 
 beforeEach(async () => {
-	await empty(client);
-	await seed(client);
+	await empty(pool);
+	await seed(pool);
 });
 
 afterAll(async () => {
-	await client.end();
+	await pool.end();
 });
 
+const validData: CreateTemperatureMeasurementData = {
+	userId: users.one.id,
+	value_celsius: 0,
+	depth_meters: 0,
+	latitude: 59.884242,
+	longitude: 10.654242,
+	measurement_date: msFromNow(20000),
+};
+
 describe("temperatureService", () => {
-	it("database schema is setup", async () => {
-		const { rows } = await client.query(
-			`SELECT table_name FROM information_schema.tables WHERe table_schema='public' ORDER BY table_name`,
-		);
+	it("api-request updates the database with values from the request", async () => {
+		const results = await createTemperatureMeasurement(validData);
 
-		console.log("ASUDHWUEGF" + users.one.id);
+		expect(results.user_id).toBe(users.one.id);
+		expect(results.total_points).toBe(users.one.total_points + results.points_earned);
 
-		expect(rows.map((e) => e.table_name)).toEqual([
-			"achievements",
-			"avatars",
-			"badges",
-			"measurements",
-			"temperature_data",
-			"user",
-			"user_achievements",
-		]);
+		const { rows } = await pool.query(`SELECT id FROM temperature_data WHERE id = $1`, [results.id]);
+		expect(rows).toHaveLength(1);
 	});
 });
