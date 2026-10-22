@@ -1,6 +1,6 @@
 import { expect } from "vitest";
 import { createTemperatureMeasurement } from "../../../src/controllers/temperatureController";
-import { createResponse } from "../../utils/temperatureRequestBuilder";
+import { createTemperatureResponse } from "../../example-based/builders/temperatureRequestBuilder";
 import * as temperatureService from "../../../src/services/temperatureService";
 import {
 	validRequestBody,
@@ -8,7 +8,7 @@ import {
 	validUser,
 	invalidUser,
 	request,
-} from "../generators/temperatureController.generators";
+} from "../generators/TemperatureBodyArbitrary.generator";
 import type { Request } from "express";
 import { NOW } from "../../utils/date";
 import fc from "fast-check";
@@ -18,7 +18,7 @@ export const validBodyRequestsGet201Response = fc.asyncProperty(
 	request(validRequestBody(NOW), validUser()),
 	async (req) => {
 		const request = req as unknown as Request;
-		const response = createResponse();
+		const response = createTemperatureResponse();
 
 		await createTemperatureMeasurement(request, response);
 
@@ -30,7 +30,7 @@ export const invalidBodyRequestsGet400Response = fc.asyncProperty(
 	request(invalidRequestBody(NOW), validUser()),
 	async (req) => {
 		const request = req as unknown as Request;
-		const response = createResponse();
+		const response = createTemperatureResponse();
 
 		await createTemperatureMeasurement(request, response);
 
@@ -43,7 +43,7 @@ export const invalidUserRequestsGet401Response = fc.asyncProperty(
 	request(validRequestBody(NOW), invalidUser()),
 	async (req) => {
 		const request = req as unknown as Request;
-		const response = createResponse();
+		const response = createTemperatureResponse();
 
 		await createTemperatureMeasurement(request, response);
 

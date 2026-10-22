@@ -1,42 +1,21 @@
-import { vi } from "vitest";
-import type { Request, Response } from "express";
+import { CreateTemperatureMeasurementData } from "services/temperatureService";
+import { NOW } from "../../utils/date";
 
 export const REQUIRED = ["value_ceslius", "latitude", "longitude", "measurement_date"] as const;
 export const OPTIONAL = ["instrument_type", "notes"] as const;
 export const FIELDS = [...REQUIRED, ...OPTIONAL] as const;
 
-export const createResponse = () => {
-	const res = {
-		status: vi.fn().mockName("res.status"),
-		json: vi.fn().mockName("res.json"),
-		send: vi.fn().mockName("res.send"),
-	};
-	res.status.mockReturnValue(res);
-	res.json.mockReturnValue(res);
-	res.send.mockReturnValue(res);
-	return res as unknown as Response & typeof res;
-};
-
 export const validTemperatureBody = {
 	value_celsius: 10.0,
+	depth_meters: 0.0,
 	latitude: 59.884242,
 	longitude: 10.654242,
-	measurement_date: "2026-09-01",
+	measurement_date: new Date(NOW),
 };
 
-class TemperatureRequestBuilder {
+// big and strong :)
+export class TemperatureBodyBuilder {
 	body: Record<string, unknown> = { ...validTemperatureBody };
-	user: { id: unknown } | undefined = { id: "test-user-id" };
-
-	withNoUser(): this {
-		this.user = undefined;
-		return this;
-	}
-
-	withUserId(userId: unknown): this {
-		this.user = { id: userId };
-		return this;
-	}
 
 	withTemperature(valueCelsius: unknown): this {
 		this.body.value_celsius = valueCelsius;
@@ -81,4 +60,4 @@ class TemperatureRequestBuilder {
 	}
 }
 
-export const createRequest = () => new TemperatureRequestBuilder() as TemperatureRequestBuilder & Request;
+export const createTemperatureBody = () => new TemperatureBodyBuilder() as CreateTemperatureMeasurementData;
