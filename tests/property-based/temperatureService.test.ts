@@ -7,7 +7,7 @@ import {
 	invalidDataDoesntUpdateDatabase,
 	invalidDataThrowsError,
 	validDataUpdatesDatabase,
-} from "./properties/temperatureService.properties";
+} from "./properties/temperatureService.properties.ts";
 
 beforeEach(() => {
 	vi.useFakeTimers();

@@ -8,7 +8,7 @@ import {
 	pointsReturnsBaseValueOrMore,
 	pointsAlwaysIncreases,
 	pointsHandlesInfinity,
-} from "./properties/temperaturePointsService.properties";
+} from "./properties/temperaturePointsService.properties.ts";
 
 const settings = {
 	timeout: 1000,

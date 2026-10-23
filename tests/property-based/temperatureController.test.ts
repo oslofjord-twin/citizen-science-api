@@ -6,7 +6,7 @@ import {
 	invalidBodyRequestsGet400Response,
 	invalidUserRequestsGet401Response,
 	validBodyRequestsGet201Response,
-} from "./properties/temperatureController.properties";
+} from "./properties/temperatureController.properties.ts";
 import { NOW } from "../utils/date";
 
 vi.mock("../../src/services/temperatureService");

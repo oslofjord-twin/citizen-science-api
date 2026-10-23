@@ -4,7 +4,7 @@ import fc from "fast-check";
 import {
 	invalidTemperatureData,
 	validTemperatureData,
-} from "../generators/TemperatureMeasurementDataArbitrary.generator";
+} from "../generators/TemperatureMeasurementDataArbitrary.generator.ts";
 import { expect } from "vitest";
 import { pool } from "../../../src/config/database";
 

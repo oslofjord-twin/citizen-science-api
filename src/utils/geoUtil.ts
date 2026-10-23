@@ -5,13 +5,13 @@ type Ring = Coordinate[];
 type Polygon = Ring[];
 type MultiPolygon = Polygon[];
 
-export function normalizeLongitude(lon: number): number {
+function normalizeLongitude(lon: number): number {
 	if (lon < -180) return lon + 360;
 	if (lon > 180) return lon - 360;
 	return lon;
 }
 
-let normalizedCoords: MultiPolygon;
+export let normalizedCoords: MultiPolygon;
 
 if (area.type === "Polygon") {
 	const coords = area.coordinates as Polygon;

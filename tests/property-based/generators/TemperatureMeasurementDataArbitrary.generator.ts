@@ -1,6 +1,8 @@
 import fc, { Arbitrary, Value, Stream, type Random } from "fast-check";
 import { users } from "../../seed/model/user";
-import { CreateTemperatureMeasurementData } from "services/temperatureService";
+import { CreateTemperatureMeasurementData } from "../../../src/services/temperatureService.ts";
+import { osloFjordPoint } from "./OsloFjordPoint.generator.ts";
+import { isWithinOslofjord } from "../../../src/utils/geoUtil.ts";
 
 const BOUNDS = {
 	userId: [users.one.id, users.two.id],
@@ -63,12 +65,14 @@ abstract class TemperatureMeasurementDataArbitrary extends Arbitrary<CreateTempe
 	}
 
 	protected validData(mrng: Random, biasFactor: number | undefined): CreateTemperatureMeasurementData {
+		const { lat, lon } = osloFjordPoint().generate(mrng, biasFactor).value;
+
 		const data: CreateTemperatureMeasurementData = {
 			userId: BOUNDS.userId[mrng.nextInt(0, BOUNDS.userId.length - 1)],
 			value_celsius: inBound(mrng, biasFactor, BOUNDS.value_celsius),
 			depth_meters: inBound(mrng, biasFactor, BOUNDS.depth_meters),
-			latitude: inBound(mrng, biasFactor, BOUNDS.latitude),
-			longitude: inBound(mrng, biasFactor, BOUNDS.longitude),
+			latitude: lat,
+			longitude: lon,
 			measurement_date: new Date(
 				this.now + inBound(mrng, biasFactor, BOUNDS.measurement_date),
 			).toISOString(),
@@ -95,11 +99,15 @@ abstract class TemperatureMeasurementDataArbitrary extends Arbitrary<CreateTempe
 		switch (field) {
 			case "value_celsius":
 			case "depth_meters":
+				return this.inRange(val, BOUNDS[field]);
 			case "latitude":
 			case "longitude":
-				return this.inRange(val, BOUNDS[field]);
+				return typeof val === "number";
 			case "measurement_date":
-				return val instanceof Date && this.inRange(val.getTime(), this.dateRange());
+				return (
+					typeof val === "string" &&
+					this.inRange(new Date(val).getTime(), this.dateRange())
+				);
 			case "userId":
 				return BOUNDS.userId.includes(val as string);
 			case "instrument_type":
@@ -113,7 +121,8 @@ abstract class TemperatureMeasurementDataArbitrary extends Arbitrary<CreateTempe
 		return fields.every((field) =>
 			field in data
 				? this.isValidField(field, data[field])
-				: !(REQUIRED as readonly string[]).includes(field),
+				: !(REQUIRED as readonly string[]).includes(field) &&
+					isWithinOslofjord(data.latitude, data.longitude),
 		);
 	}
 
@@ -200,6 +209,7 @@ class InvalidTemperatureMeasurementDataArbitrary extends TemperatureMeasurementD
 				break;
 			case "userId":
 				data.userId = fc.string().generate(mrng, biasFactor).value;
+				break;
 			case "value_celsius":
 				data.value_celsius = outBound(mrng, biasFactor, BOUNDS.value_celsius);
 				break;
