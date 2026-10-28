@@ -11,6 +11,7 @@ import {
 	REQUIRED_FIELDS,
 	TemperatureDataField,
 } from "../../shared/temperature.rules.ts";
+import { YEAR } from "../../utils/date.ts";
 
 abstract class TemperatureMeasurementDataArbitrary extends Arbitrary<CreateTemperatureMeasurementData> {
 	constructor(protected readonly now: number) {
@@ -190,7 +191,7 @@ class InvalidTemperatureMeasurementDataArbitrary extends TemperatureMeasurementD
 							min: this.now + BOUNDS.measurement_date.min - 1,
 							max: this.now + BOUNDS.measurement_date.max + 1,
 						},
-						365 * 24 * 60 * 60 * 1000,
+						YEAR,
 					),
 				).toISOString();
 				break;

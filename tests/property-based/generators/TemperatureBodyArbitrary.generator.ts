@@ -195,7 +195,7 @@ class InvalidTemperatureBodyArbitrary extends TemperatureBodyArbitrary {
 export const validRequestBody = (now: number) => new ValidTemperatureBodyArbitrary(now);
 export const invalidRequestBody = (now: number) => new InvalidTemperatureBodyArbitrary(now);
 
-export const validUser = () => fc.record({ id: fc.constantFrom(BOUNDS.userIds) });
+export const validUser = () => fc.record({ id: fc.constantFrom(...BOUNDS.userIds) }, { noNullPrototype: true });
 export const invalidUser = () =>
 	fc.oneof(
 		fc.constantFrom(undefined, null),

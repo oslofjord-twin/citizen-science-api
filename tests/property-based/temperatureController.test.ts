@@ -39,7 +39,7 @@ const settings = {
 	],
 };
 
-describe("createTemperatureMeasurement", () => {
+describe("createTemperatureMeasurementController", () => {
 	it("should return a response with status 201", async () => {
 		await fc.assert(validBodyRequestsGet201Response, settings);
 	});

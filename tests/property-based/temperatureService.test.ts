@@ -4,7 +4,8 @@ import { NOW } from "../utils/date";
 import { pool } from "../../src/config/database";
 import { empty, seed } from "../seed/seed";
 import {
-	duplicateSubmissionRewardsLess,
+	duplicateSubmissionRewardsLessWithinADay,
+	duplicateSubmissionRewardsTheSameAfterADay,
 	invalidDataDoesntUpdateDatabase,
 	invalidDataThrowsError,
 	validDataUpdatesDatabase,
@@ -34,7 +35,7 @@ const settings = {
 	],
 };
 
-describe("createTemperatureMeasurement", () => {
+describe("createTemperatureMeasurementService", () => {
 	it("should update the database with values from valid data", async () => {
 		await fc.assert(validDataUpdatesDatabase, settings);
 	});
@@ -48,6 +49,10 @@ describe("createTemperatureMeasurement", () => {
 	});
 
 	it("should reward less points for duplicate submissions within a day difference", async () => {
-		await fc.assert(duplicateSubmissionRewardsLess, settings);
+		await fc.assert(duplicateSubmissionRewardsLessWithinADay, settings);
+	});
+
+	it("it should reward same amount of points for dupliace submissions after a day", async () => {
+		await fc.assert(duplicateSubmissionRewardsTheSameAfterADay, settings);
 	});
 });

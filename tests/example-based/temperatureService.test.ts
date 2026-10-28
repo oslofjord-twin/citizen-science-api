@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { empty, seed } from "../seed/seed.js";
 import { pool } from "../../src/config/database.js";
 import { users } from "../seed/model/user.js";
-import { msFromNow, NOW } from "../utils/date.js";
+import { DAY, HOUR, MINUTE, msFromNow, NOW, SECOND } from "../utils/date.js";
 import { achievements } from "../seed/model/achievements.js";
 import { createTemperatureMeasurement } from "../../src/services/temperatureService.js";
 import { createTemperatureData } from "./builders/temperature.builder.js";
@@ -139,4 +139,14 @@ describe("temperatureService", () => {
 			expect(rows).toHaveLength(0);
 		});
 	}
+
+	const invalidDates = [-MINUTE * 10, -HOUR, -HOUR * 10, -DAY - SECOND].forEach((time) => {
+
+		it(`it should reward less for duplicate submissions for resubmitting within ${time * -1} seconds`, async () => {
+			const invalidData = createTemperatureData().with("measurement_date", new Date(NOW + time).toISOString());
+
+			
+		});
+	});
+
 });

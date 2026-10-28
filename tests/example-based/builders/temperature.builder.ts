@@ -1,4 +1,4 @@
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { RequestBuilder } from "./core/RequestBuilder";
 import {
 	TemperatureField,
