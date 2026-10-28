@@ -2,10 +2,12 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { empty, seed } from "../seed/seed.js";
 import { pool } from "../../src/config/database.js";
 import { users } from "../seed/model/user.js";
-import { CreateTemperatureMeasurementData } from "../../src/services/temperatureService.js";
 import { msFromNow, NOW } from "../utils/date.js";
 import { achievements } from "../seed/model/achievements.js";
 import { createTemperatureMeasurement } from "../../src/services/temperatureService.js";
+import { createTemperatureData } from "./builders/temperature.builder.js";
+import { TemperatureDataField } from "../shared/temperature.rules.js";
+import { BASE_VALUE } from "../shared/calculatePoints.rules.js";
 
 beforeEach(async () => {
 	await empty(pool);
@@ -23,26 +25,11 @@ afterEach(() => {
 	vi.useRealTimers();
 });
 
-const validTemperatureMeasurmentData: CreateTemperatureMeasurementData = {
-	userId: users.one.id,
-	value_celsius: 0,
-	depth_meters: 0,
-	latitude: 59.884242,
-	longitude: 10.654242,
-	measurement_date: msFromNow(-20000),
-	notes: "42",
-};
-const basePointValue = 5;
 const validDataType = "temperature";
-
-const createData = (overwrite: Record<string, unknown>): CreateTemperatureMeasurementData => ({
-	...validTemperatureMeasurmentData,
-	...overwrite,
-});
 
 describe("temperatureService", () => {
 	it("should update / insert into the database with valid values from user first submission", async () => {
-		const validData = createData({});
+		const validData = createTemperatureData().build();
 		const results = await createTemperatureMeasurement(validData);
 
 		const expectedPoints = users.one.total_points + results.points_earned;
@@ -53,7 +40,7 @@ describe("temperatureService", () => {
 		const userResults = await pool.query(`SELECT total_points FROM "user" WHERE id = $1`, [users.one.id]);
 		let rows = userResults.rows;
 		expect(rows).toHaveLength(1);
-		expect(rows[0]["total_points"]).toBe(basePointValue);
+		expect(rows[0]["total_points"]).toBe(BASE_VALUE);
 
 		const measurementsResults = await pool.query(`
 			SELECT latitude::float8 AS latitude, longitude::float8 AS longitude, data_type, user_id, notes, points_earned 
@@ -94,7 +81,7 @@ describe("temperatureService", () => {
 		});
 	});
 
-	const invalidDatas: Record<string, unknown>[] = [
+	const invalidDatas: Partial<Record<TemperatureDataField, unknown>>[] = [
 		{ userId: "" },
 		{ value_celsius: 101 },
 		{ depth_meters: -1 },
@@ -106,9 +93,9 @@ describe("temperatureService", () => {
 	];
 
 	for (const rewrite of invalidDatas) {
-		const key = Object.keys(rewrite)[0];
+		const key = Object.keys(rewrite)[0] as TemperatureDataField;
 		const value = rewrite[key];
-		const invalidData = createData(rewrite);
+		const invalidData = createTemperatureData().with(key, value).build();
 
 		it(`should throw with values ${key}: '${value}' from user submission`, async () => {
 			await expect(createTemperatureMeasurement(invalidData)).rejects.toThrow();

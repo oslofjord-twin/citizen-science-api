@@ -1,10 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createTemperatureMeasurement } from "../../src/controllers/temperatureController";
-import { createTemperatureRequest, createTemperatureResponse } from "./builders/temperatureRequestBuilder";
+import { createTemperatureRequest } from "./builders/temperature.builder";
 import { msFromNow, NOW } from "../utils/date";
 import * as temperatureService from "../../src/services/temperatureService";
 import * as geoUtil from "../../src/utils/geoUtil";
-import { REQUIRED } from "./builders/temperatureBodyBuilder";
+import { REQUIRED_FIELDS as REQUIRED } from "../shared/temperature.rules";
+import { createMockResponse } from "../shared/mockResponse";
 
 vi.mock("../../src/services/temperatureService");
 vi.mock("../../src/utils/geoUtil");
@@ -33,8 +34,8 @@ describe("createTemperatureMeasurement", () => {
 	// Temperature field
 	for (const temperature of [-50, 0, 100]) {
 		it(`should accept ${temperature} degrees Celsius`, async () => {
-			const request = createTemperatureRequest().withTemperature(temperature);
-			const response = createTemperatureResponse();
+			const request = createTemperatureRequest().with("value_celsius", temperature);
+			const response = createMockResponse();
 
 			await createTemperatureMeasurement(request, response);
 
@@ -44,8 +45,8 @@ describe("createTemperatureMeasurement", () => {
 
 	for (const temperature of [-Infinity, -500, -50.1, 100.1, 500, Infinity]) {
 		it(`should reject ${temperature} degrees Celsius`, async () => {
-			const request = createTemperatureRequest().withTemperature(temperature);
-			const response = createTemperatureResponse();
+			const request = createTemperatureRequest().with("value_celsius", temperature);
+			const response = createMockResponse();
 
 			await createTemperatureMeasurement(request, response);
 
@@ -55,8 +56,8 @@ describe("createTemperatureMeasurement", () => {
 	}
 
 	it("should reject a missing temperature", async () => {
-		const request = createTemperatureRequest().withTemperature(undefined);
-		const response = createTemperatureResponse();
+		const request = createTemperatureRequest().with("value_celsius", undefined);
+		const response = createMockResponse();
 
 		await createTemperatureMeasurement(request, response);
 
@@ -67,8 +68,8 @@ describe("createTemperatureMeasurement", () => {
 	// Depth meter field (current limit 200m)
 	for (const depth of [0, 50, 200]) {
 		it(`should accept ${depth} meter depth`, async () => {
-			const request = createTemperatureRequest().withDepth(depth);
-			const response = createTemperatureResponse();
+			const request = createTemperatureRequest().with("depth_meters", depth);
+			const response = createMockResponse();
 
 			await createTemperatureMeasurement(request, response);
 
@@ -78,8 +79,8 @@ describe("createTemperatureMeasurement", () => {
 
 	for (const depth of [-1, 201, 1000, Infinity]) {
 		it(`should reject ${depth} meter depth`, async () => {
-			const request = createTemperatureRequest().withDepth(depth);
-			const response = createTemperatureResponse();
+			const request = createTemperatureRequest().with("depth_meters", depth);
+			const response = createMockResponse();
 
 			await createTemperatureMeasurement(request, response);
 
@@ -89,8 +90,8 @@ describe("createTemperatureMeasurement", () => {
 	}
 
 	it(`should reject missing meter depth`, async () => {
-		const request = createTemperatureRequest().withDepth(undefined);
-		const response = createTemperatureResponse();
+		const request = createTemperatureRequest().with("depth_meters", undefined);
+		const response = createMockResponse();
 
 		await createTemperatureMeasurement(request, response);
 
@@ -100,8 +101,8 @@ describe("createTemperatureMeasurement", () => {
 
 	// Instrument field
 	it(`should accept valid instrument type, "thermometor"`, async () => {
-		const request = createTemperatureRequest().withInstrument("thermometor");
-		const response = createTemperatureResponse();
+		const request = createTemperatureRequest().with("instrument_type", "thermometor");
+		const response = createMockResponse();
 
 		await createTemperatureMeasurement(request, response);
 
@@ -109,8 +110,8 @@ describe("createTemperatureMeasurement", () => {
 	});
 
 	it(`should accept empty field`, async () => {
-		const request = createTemperatureRequest().withInstrument(undefined);
-		const response = createTemperatureResponse();
+		const request = createTemperatureRequest().with("instrument_type", undefined);
+		const response = createMockResponse();
 
 		await createTemperatureMeasurement(request, response);
 
@@ -118,8 +119,8 @@ describe("createTemperatureMeasurement", () => {
 	});
 
 	it(`should reject invalid instrument type, "elephant"`, async () => {
-		const request = createTemperatureRequest().withInstrument("elephant");
-		const response = createTemperatureResponse();
+		const request = createTemperatureRequest().with("instrument_type", "elephant");
+		const response = createMockResponse();
 
 		await createTemperatureMeasurement(request, response);
 
@@ -139,8 +140,10 @@ describe("createTemperatureMeasurement", () => {
 		[-0, -0],
 	]) {
 		it(`should accept latitude ${latitude} and longitude ${longitude}`, async () => {
-			const request = createTemperatureRequest().withLatitude(latitude).withLongitude(longitude);
-			const response = createTemperatureResponse();
+			const request = createTemperatureRequest()
+				.with("latitude", latitude)
+				.with("longitude", longitude);
+			const response = createMockResponse();
 
 			await createTemperatureMeasurement(request, response);
 
@@ -164,8 +167,10 @@ describe("createTemperatureMeasurement", () => {
 		[undefined, undefined],
 	]) {
 		it(`should reject latitude ${latitude} and longitude ${longitude}`, async () => {
-			const request = createTemperatureRequest().withLatitude(latitude).withLongitude(longitude);
-			const response = createTemperatureResponse();
+			const request = createTemperatureRequest()
+				.with("latitude", latitude)
+				.with("longitude", longitude);
+			const response = createMockResponse();
 
 			await createTemperatureMeasurement(request, response);
 
@@ -177,8 +182,8 @@ describe("createTemperatureMeasurement", () => {
 	// Date field
 	for (const date of [msFromNow(0), msFromNow(-1000), msFromNow(-100000)]) {
 		it(`should accept date ${date}`, async () => {
-			const request = createTemperatureRequest().withDate(date);
-			const response = createTemperatureResponse();
+			const request = createTemperatureRequest().with("measurement_date", date);
+			const response = createMockResponse();
 
 			await createTemperatureMeasurement(request, response);
 
@@ -196,8 +201,8 @@ describe("createTemperatureMeasurement", () => {
 		msFromNow(24 * 60 * 60 * 1000),
 	]) {
 		it(`should reject date ${date}`, async () => {
-			const request = createTemperatureRequest().withDate(date);
-			const response = createTemperatureResponse();
+			const request = createTemperatureRequest().with("measurement_date", date);
+			const response = createMockResponse();
 
 			await createTemperatureMeasurement(request, response);
 
@@ -210,7 +215,7 @@ describe("createTemperatureMeasurement", () => {
 	for (const field of REQUIRED) {
 		it(`should reject missing ${field} field`, async () => {
 			const request = createTemperatureRequest().without(field);
-			const response = createTemperatureResponse();
+			const response = createMockResponse();
 
 			await createTemperatureMeasurement(request, response);
 

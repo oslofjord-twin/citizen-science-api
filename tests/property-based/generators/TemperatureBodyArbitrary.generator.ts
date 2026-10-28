@@ -1,56 +1,14 @@
 import fc, { Arbitrary, Value, Stream, type Random } from "fast-check";
-import { users } from "../../seed/model/user";
-
-type Body = Record<string, unknown>;
-
-const BOUNDS = {
-	userId: [users.one.id, users.two.id],
-	value_celsius: { min: -50, max: 100, noNaN: true },
-	depth_meters: { min: 0, max: 200, noNaN: true },
-	latitude: { min: -90, max: 90, noNaN: true },
-	longitude: { min: -180, max: 180, noNaN: true },
-	// can change later
-	measurement_date: {
-		min: -2 * 365.25 * 24 * 60 * 60 * 1000,
-		max: 10 * 60 * 1000,
-	},
-	notes: { maxLength: 500, size: "max" as const },
-	instrument_type: ["thermometer", undefined, ""],
-};
-
-const NUM_FIELDS = ["value_celsius", "depth_meters", "latitude", "longitude"] as const;
-const REQUIRED = [...NUM_FIELDS, "measurement_date"] as const;
-const OPTIONAL = ["instrument_type", "notes"] as const;
-const fields = [...REQUIRED, ...OPTIONAL] as const;
-type Field = (typeof fields)[number];
-type Range = { min: number; max: number };
-
-const acc = 0.000000001;
-
-export const coin = (mrng: Random) => mrng.nextInt(0, 1);
-
-export const nextDouble = (mrng: Random, { min, max }: Range) =>
-	min + (max - min) * ((mrng.nextInt(0, 2 ** 26 - 1) + mrng.nextInt(0, 2 ** 27 - 1) / 2 ** 27) / 2 ** 26);
-
-export const biased = (mrng: Random, biasFactor: number | undefined) =>
-	biasFactor !== undefined && mrng.nextInt(1, biasFactor) === 1;
-
-export const inBound = (mrng: Random, biasFactor: number | undefined, { min, max }: Range) =>
-	biased(mrng, biasFactor) ? (coin(mrng) ? min : max) : nextDouble(mrng, { min, max });
-
-export const outBound = (
-	mrng: Random,
-	biasFactor: number | undefined,
-	{ min, max }: Range,
-	spread: number = Number.MAX_VALUE,
-) =>
-	biased(mrng, biasFactor)
-		? coin(mrng)
-			? min - acc
-			: max + acc
-		: coin(mrng)
-			? nextDouble(mrng, { min: min - spread, max: min - acc })
-			: nextDouble(mrng, { min: max + acc, max: max + spread });
+import { ACC, coin, inBound, outBound, Range } from "./core/numbers";
+import {
+	ALL_FIELDS,
+	REQUIRED_FIELDS,
+	TEMPERATURE_BOUNDS as BOUNDS,
+	TemperatureField,
+	OPTIONAL_FIELDS,
+	NUMBER_FIELDS,
+	TemperatureBody as Body,
+} from "../../shared/temperature.rules";
 
 abstract class TemperatureBodyArbitrary extends Arbitrary<Body> {
 	constructor(protected readonly now: number) {
@@ -69,7 +27,9 @@ abstract class TemperatureBodyArbitrary extends Arbitrary<Body> {
 			depth_meters: inBound(mrng, biasFactor, BOUNDS.depth_meters),
 			latitude: inBound(mrng, biasFactor, BOUNDS.latitude),
 			longitude: inBound(mrng, biasFactor, BOUNDS.longitude),
-			measurement_date: new Date(this.now + inBound(mrng, biasFactor, BOUNDS.measurement_date)),
+			measurement_date: new Date(
+				this.now + inBound(mrng, biasFactor, BOUNDS.measurement_date),
+			).toISOString(),
 		};
 		if (coin(mrng)) {
 			body.instrument_type =
@@ -88,7 +48,7 @@ abstract class TemperatureBodyArbitrary extends Arbitrary<Body> {
 		return typeof val === "number" && min <= val && val <= max;
 	}
 
-	private isValidField(field: Field, val: unknown): boolean {
+	private isValidField(field: TemperatureField, val: unknown): boolean {
 		switch (field) {
 			case "value_celsius":
 			case "depth_meters":
@@ -98,23 +58,23 @@ abstract class TemperatureBodyArbitrary extends Arbitrary<Body> {
 			case "measurement_date":
 				return val instanceof Date && this.inRange(val.getTime(), this.dateRange());
 			case "instrument_type":
-				return BOUNDS.instrument_type.includes(val as string | undefined);
+				return (BOUNDS.instrument_type as readonly unknown[]).includes(val);
 			case "notes":
 				return typeof val === "string" && val.length <= BOUNDS.notes.maxLength;
 		}
 	}
 
 	protected isValid(body: Body): boolean {
-		return fields.every((field) =>
+		return ALL_FIELDS.every((field) =>
 			field in body
 				? this.isValidField(field, body[field])
-				: !(REQUIRED as readonly string[]).includes(field),
+				: !(REQUIRED_FIELDS as readonly string[]).includes(field),
 		);
 	}
 
 	// shrinking
 
-	private target({ min, max }: Range, x: number, simplest: number, step: number = acc): number {
+	private target({ min, max }: Range, x: number, simplest: number, step: number = ACC): number {
 		if (x < min) return min - step;
 		if (x > max) return max + step;
 		return simplest;
@@ -134,26 +94,26 @@ abstract class TemperatureBodyArbitrary extends Arbitrary<Body> {
 	}
 
 	private *candidates(body: Body): IterableIterator<Body> {
-		for (const key of OPTIONAL) {
+		for (const key of OPTIONAL_FIELDS) {
 			if (key in body) {
 				const { [key]: _, ...rest } = body;
 				yield rest;
 			}
 		}
 
-		for (const key of NUM_FIELDS) {
+		for (const key of NUMBER_FIELDS) {
 			const val = body[key] as number;
 			if (typeof val !== "number") continue;
 			const simplest = 0;
-			for (const target of this.towards(val, this.target(BOUNDS[key], val, simplest), acc)) {
+			for (const target of this.towards(val, this.target(BOUNDS[key], val, simplest), ACC)) {
 				yield { ...body, [key]: target };
 			}
 		}
 
-		if (body.measurement_date instanceof Date) {
-			const time = (body.measurement_date as Date).getTime();
+		if (typeof body.measurement_date === "string") {
+			const time = new Date(body.measurement_date).getTime();
 			for (const target of this.towards(time, this.target(this.dateRange(), time, this.now, 1), 1)) {
-				yield { ...body, ["measurement_date"]: new Date(Math.round(target)) };
+				yield { ...body, ["measurement_date"]: new Date(Math.round(target)).toISOString() };
 			}
 		}
 
@@ -186,10 +146,10 @@ class InvalidTemperatureBodyArbitrary extends TemperatureBodyArbitrary {
 
 	generate(mrng: Random, biasFactor: number | undefined): Value<Body> {
 		const body = this.validBody(mrng, biasFactor);
-		const field = ["missing_required", ...fields][mrng.nextInt(0, fields.length)];
+		const field = ["missing_required", ...ALL_FIELDS][mrng.nextInt(0, ALL_FIELDS.length)];
 		switch (field) {
 			case "missing_required":
-				delete body[REQUIRED[mrng.nextInt(0, REQUIRED.length - 1)]];
+				delete body[REQUIRED_FIELDS[mrng.nextInt(0, REQUIRED_FIELDS.length - 1)]];
 				break;
 			case "value_celsius":
 				body.value_celsius = outBound(mrng, biasFactor, BOUNDS.value_celsius);
@@ -214,7 +174,7 @@ class InvalidTemperatureBodyArbitrary extends TemperatureBodyArbitrary {
 						},
 						365 * 24 * 60 * 60 * 1000,
 					),
-				);
+				).toISOString();
 				break;
 			case "instrument_type":
 				body.instrument_type =
@@ -235,7 +195,7 @@ class InvalidTemperatureBodyArbitrary extends TemperatureBodyArbitrary {
 export const validRequestBody = (now: number) => new ValidTemperatureBodyArbitrary(now);
 export const invalidRequestBody = (now: number) => new InvalidTemperatureBodyArbitrary(now);
 
-export const validUser = () => fc.record({ id: fc.constantFrom(BOUNDS.userId) });
+export const validUser = () => fc.record({ id: fc.constantFrom(BOUNDS.userIds) });
 export const invalidUser = () =>
 	fc.oneof(
 		fc.constantFrom(undefined, null),
@@ -246,15 +206,10 @@ export const invalidUser = () =>
 		),
 	);
 
-const dateMapping = (body: Body) =>
-	body.measurement_date instanceof Date
-		? { ...body, measurement_date: body.measurement_date.toISOString() }
-		: body;
-
-export const request = (body: Arbitrary<Body>, user: Arbitrary<Body | undefined | null>) =>
+export const request = (body: Arbitrary<Body>, user: Arbitrary<Record<string, unknown> | undefined | null>) =>
 	fc.record(
 		{
-			body: body.map(dateMapping),
+			body: body,
 			user: user,
 		},
 		{ noNullPrototype: true },

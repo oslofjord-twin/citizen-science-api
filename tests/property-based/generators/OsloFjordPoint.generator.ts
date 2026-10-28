@@ -1,9 +1,7 @@
 import earcut, { flatten, deviation } from "earcut";
 import fc, { Arbitrary, Random, Stream, Value } from "fast-check";
 import { normalizedCoords } from "../../../src/utils/geoUtil.ts";
-import { nextDouble } from "./TemperatureBodyArbitrary.generator.ts";
-
-const acc = 0.000000001;
+import { ACC, nextDouble } from "./core/numbers.ts";
 
 export type Point = { lat: number; lon: number };
 type Corner = [number, number];
@@ -15,7 +13,7 @@ for (const polygon of normalizedCoords) {
 	const flattenedTriplets = earcut(vertices, holes, dimensions);
 
 	const err = deviation(vertices, holes, dimensions, flattenedTriplets);
-	if (err >= acc) {
+	if (err >= ACC) {
 		throw new Error(`Triplets were generated not accuratly enough, deviation from real data: ${err}`);
 	}
 
@@ -48,8 +46,8 @@ class OsloFjordPoint extends Arbitrary<Point> {
 		}
 
 		if (biasFactor !== undefined && mrng.nextInt(1, biasFactor) === 1) {
-			u *= acc;
-			v *= acc;
+			u *= ACC;
+			v *= ACC;
 		}
 
 		const context: Context = { triplet, u, v };
@@ -61,10 +59,10 @@ class OsloFjordPoint extends Arbitrary<Point> {
 	}
 
 	shrink(_value: Point, context: Context | undefined): Stream<fc.Value<Point>> {
-		if (!context || context.u + context.v < acc) return Stream.nil();
+		if (!context || context.u + context.v < ACC) return Stream.nil();
 
 		const candidates: Context[] = [
-			{ ...context, u: context.u * acc, v: context.v * acc },
+			{ ...context, u: context.u * ACC, v: context.v * ACC },
 			{ ...context, u: context.u / 2, v: context.v / 2 },
 		];
 

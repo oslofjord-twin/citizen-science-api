@@ -40,11 +40,11 @@ describe("calculatePoints", () => {
 		await assert(pointsReturnsBaseValueOrMore, settings);
 	});
 
-	it("calculatePoints should return more points the bigger the depth", async () => {
+	it("should return more points the bigger the depth", async () => {
 		await assert(pointsAlwaysIncreases, settings);
 	});
 
-	it("caluclatePoints should handle pos/neg infinite depth values", async () => {
+	it("should handle pos/neg infinite depth values", async () => {
 		await assert(pointsHandlesInfinity, {
 			examples: [[Infinity], [-Infinity], [NaN]],
 			...settings,

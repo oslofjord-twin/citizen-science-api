@@ -1,6 +1,6 @@
 import { readCsv } from "../../utils/csv";
 
-type User = {
+export type User = {
 	id: string;
 	name: string;
 	email: string;

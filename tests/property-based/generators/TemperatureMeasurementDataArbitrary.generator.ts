@@ -1,57 +1,16 @@
 import fc, { Arbitrary, Value, Stream, type Random } from "fast-check";
-import { users } from "../../seed/model/user";
 import { CreateTemperatureMeasurementData } from "../../../src/services/temperatureService.ts";
 import { osloFjordPoint } from "./OsloFjordPoint.generator.ts";
 import { isWithinOslofjord } from "../../../src/utils/geoUtil.ts";
-
-const BOUNDS = {
-	userId: [users.one.id, users.two.id],
-	value_celsius: { min: -50, max: 100, noNaN: true },
-	depth_meters: { min: 0, max: 200, noNaN: true },
-	latitude: { min: -90, max: 90, noNaN: true },
-	longitude: { min: -180, max: 180, noNaN: true },
-	// can change later
-	measurement_date: {
-		min: -2 * 365.25 * 24 * 60 * 60 * 1000,
-		max: 10 * 60 * 1000,
-	},
-	notes: { maxLength: 500, size: "max" as const },
-	instrument_type: ["thermometer", undefined, ""],
-};
-
-const NUM_FIELDS = ["value_celsius", "depth_meters", "latitude", "longitude"] as const;
-const REQUIRED = [...NUM_FIELDS, "measurement_date", "userId"] as const;
-const OPTIONAL = ["instrument_type", "notes"] as const;
-const fields = [...REQUIRED, ...OPTIONAL] as const;
-type Field = (typeof fields)[number];
-type Range = { min: number; max: number };
-
-const acc = 0.000000001;
-
-export const coin = (mrng: Random) => mrng.nextInt(0, 1);
-
-export const nextDouble = (mrng: Random, { min, max }: Range) =>
-	min + (max - min) * ((mrng.nextInt(0, 2 ** 26 - 1) + mrng.nextInt(0, 2 ** 27 - 1) / 2 ** 27) / 2 ** 26);
-
-export const biased = (mrng: Random, biasFactor: number | undefined) =>
-	biasFactor !== undefined && mrng.nextInt(1, biasFactor) === 1;
-
-export const inBound = (mrng: Random, biasFactor: number | undefined, { min, max }: Range) =>
-	biased(mrng, biasFactor) ? (coin(mrng) ? min : max) : nextDouble(mrng, { min, max });
-
-export const outBound = (
-	mrng: Random,
-	biasFactor: number | undefined,
-	{ min, max }: Range,
-	spread: number = Number.MAX_VALUE,
-) =>
-	biased(mrng, biasFactor)
-		? coin(mrng)
-			? min - acc
-			: max + acc
-		: coin(mrng)
-			? nextDouble(mrng, { min: min - spread, max: min - acc })
-			: nextDouble(mrng, { min: max + acc, max: max + spread });
+import { ACC, coin, inBound, outBound, Range } from "./core/numbers.ts";
+import {
+	ALL_FIELDS,
+	TEMPERATURE_BOUNDS as BOUNDS,
+	NUMBER_FIELDS,
+	OPTIONAL_FIELDS,
+	REQUIRED_FIELDS,
+	TemperatureDataField,
+} from "../../shared/temperature.rules.ts";
 
 abstract class TemperatureMeasurementDataArbitrary extends Arbitrary<CreateTemperatureMeasurementData> {
 	constructor(protected readonly now: number) {
@@ -68,7 +27,7 @@ abstract class TemperatureMeasurementDataArbitrary extends Arbitrary<CreateTempe
 		const { lat, lon } = osloFjordPoint().generate(mrng, biasFactor).value;
 
 		const data: CreateTemperatureMeasurementData = {
-			userId: BOUNDS.userId[mrng.nextInt(0, BOUNDS.userId.length - 1)],
+			userId: BOUNDS.userIds[mrng.nextInt(0, BOUNDS.userIds.length - 1)],
 			value_celsius: inBound(mrng, biasFactor, BOUNDS.value_celsius),
 			depth_meters: inBound(mrng, biasFactor, BOUNDS.depth_meters),
 			latitude: lat,
@@ -95,7 +54,7 @@ abstract class TemperatureMeasurementDataArbitrary extends Arbitrary<CreateTempe
 		return typeof val === "number" && min <= val && val <= max;
 	}
 
-	private isValidField(field: Field, val: unknown): boolean {
+	private isValidField(field: TemperatureDataField, val: unknown): boolean {
 		switch (field) {
 			case "value_celsius":
 			case "depth_meters":
@@ -109,26 +68,26 @@ abstract class TemperatureMeasurementDataArbitrary extends Arbitrary<CreateTempe
 					this.inRange(new Date(val).getTime(), this.dateRange())
 				);
 			case "userId":
-				return BOUNDS.userId.includes(val as string);
+				return BOUNDS.userIds.includes(val as string);
 			case "instrument_type":
-				return BOUNDS.instrument_type.includes(val as string | undefined);
+				return (BOUNDS.instrument_type as readonly unknown[]).includes(val);
 			case "notes":
 				return typeof val === "string" && val.length <= BOUNDS.notes.maxLength;
 		}
 	}
 
 	protected isValid(data: CreateTemperatureMeasurementData): boolean {
-		return fields.every((field) =>
+		return ALL_FIELDS.every((field) =>
 			field in data
 				? this.isValidField(field, data[field])
-				: !(REQUIRED as readonly string[]).includes(field) &&
+				: !(REQUIRED_FIELDS as readonly string[]).includes(field) &&
 					isWithinOslofjord(data.latitude, data.longitude),
 		);
 	}
 
 	// shrinking
 
-	private target({ min, max }: Range, x: number, simplest: number, step: number = acc): number {
+	private target({ min, max }: Range, x: number, simplest: number, step: number = ACC): number {
 		if (x < min) return min - step;
 		if (x > max) return max + step;
 		return simplest;
@@ -150,18 +109,18 @@ abstract class TemperatureMeasurementDataArbitrary extends Arbitrary<CreateTempe
 	private *candidates(
 		data: CreateTemperatureMeasurementData,
 	): IterableIterator<CreateTemperatureMeasurementData> {
-		for (const key of OPTIONAL) {
+		for (const key of OPTIONAL_FIELDS) {
 			if (key in data) {
 				const { [key]: _, ...rest } = data;
 				yield rest;
 			}
 		}
 
-		for (const key of NUM_FIELDS) {
+		for (const key of NUMBER_FIELDS) {
 			const val = data[key] as number;
 			if (typeof val !== "number") continue;
 			const simplest = 0;
-			for (const target of this.towards(val, this.target(BOUNDS[key], val, simplest), acc)) {
+			for (const target of this.towards(val, this.target(BOUNDS[key], val, simplest), ACC)) {
 				yield { ...data, [key]: target };
 			}
 		}
@@ -202,10 +161,10 @@ class InvalidTemperatureMeasurementDataArbitrary extends TemperatureMeasurementD
 
 	generate(mrng: Random, biasFactor: number | undefined): Value<CreateTemperatureMeasurementData> {
 		const data = this.validData(mrng, biasFactor);
-		const field = ["missing_required", ...fields][mrng.nextInt(0, fields.length)];
+		const field = ["missing_required", ...ALL_FIELDS][mrng.nextInt(0, ALL_FIELDS.length)];
 		switch (field) {
 			case "missing_required":
-				delete data[REQUIRED[mrng.nextInt(0, REQUIRED.length - 1)]];
+				delete data[REQUIRED_FIELDS[mrng.nextInt(0, REQUIRED_FIELDS.length - 1)]];
 				break;
 			case "userId":
 				data.userId = fc.string().generate(mrng, biasFactor).value;

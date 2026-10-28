@@ -4,6 +4,7 @@ import { NOW } from "../utils/date";
 import { pool } from "../../src/config/database";
 import { empty, seed } from "../seed/seed";
 import {
+	duplicateSubmissionRewardsLess,
 	invalidDataDoesntUpdateDatabase,
 	invalidDataThrowsError,
 	validDataUpdatesDatabase,
@@ -44,5 +45,9 @@ describe("createTemperatureMeasurement", () => {
 
 	it("should throw an error with values from invalid data", async () => {
 		await fc.assert(invalidDataThrowsError, settings);
+	});
+
+	it("should reward less points for duplicate submissions within a day difference", async () => {
+		await fc.assert(duplicateSubmissionRewardsLess, settings);
 	});
 });
