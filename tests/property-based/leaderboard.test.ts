@@ -1,9 +1,9 @@
-import { describe, it, vi, beforeEach, afterEach, afterAll } from "vitest";
+import { describe, it, vi, beforeEach, afterEach, afterAll, beforeAll } from "vitest";
 import fc from "fast-check";
 import { NOW } from "../utils/date";
 import { pool } from "../../src/config/database";
 import { empty, seed } from "../seed/seed";
-import { validDataUpdatesDatabase } from "./properties/temperatureService.properties.ts";
+import { leaderboardIsSortedWhenFetched } from "./properties/leaderboard.properties.ts";
 
 beforeEach(() => {
 	vi.useFakeTimers();
@@ -30,5 +30,7 @@ const settings = {
 };
 
 describe("leaderboard", () => {
-	it("", async () => {});
+	it("test", async () => {
+		fc.assert(leaderboardIsSortedWhenFetched, settings);
+	});
 });
