@@ -1,9 +1,9 @@
 import { CreateTemperatureMeasurementData } from "services/temperatureService";
-import { users } from "../seed/model/user";
-import { DAY, MINUTE, NOW, YEAR } from "../utils/date";
+import { userIds, users } from "../seed/model/user";
+import { MINUTE, NOW, YEAR } from "../utils/date";
 
 export const TEMPERATURE_BOUNDS = {
-	userIds: [users.one.id, users.two.id],
+	userIds: userIds,
 	value_celsius: { min: -50, max: 100 },
 	depth_meters: { min: 0, max: 200 },
 	latitude: { min: -90, max: 90 },

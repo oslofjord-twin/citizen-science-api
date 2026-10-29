@@ -1,3 +1,11 @@
 id,name,email,emailVerified,image,createdAt,updatedAt,total_points,level,avatar_id,badge_id,failed_attempts,lockout_until
 5a105e8b9d40e1329780d62ea2265d8a,bob marley,bob-marley@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,1,1,1,0,
-ad0234829205b9033196ba818f7a872b,alice cooper,alice-cooper@gmail.com,true,,2026-01-02T12:00:00.000Z,2026-01-02T12:00:00.000Z,0,1,2,1,0,
+ad0234829205b9033196ba818f7a872b,alice cooper,alice-cooper@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,1,2,1,0,
+8ad8757baa8564dc136c1e07507f4a98,stevie wonder,steview-wonder@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,3,1,0
+86985e105f79b95d6bc918fb45ec7727,micheal jackson,micheal-jackson@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,3,1,0
+e3d704f3542b44a621ebed70dc0efe13,frank sinatra,frank-sinatra@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,3,1,0
+4cfad7076129962ee70c36839a1e3e15,freddy mercury,freddy-mercury@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,3,1,0
+b04083e53e242626595e2b8ea327e525,mario mario,mario-mario@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,3,1,0
+5e40d09fa0529781afd1254a42913847,luigi mario,luigi-mario@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,3,1,0
+739969b53246b2c727850dbb3490ede6,donkey kong,donkey-kong@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,3,1,0
+c1a8e059bfd1e911cf10b626340c9a54,mickey mouse,mickey-mouse@gmail.com,true,,2026-01-01T12:00:00.000Z,2026-01-01T12:00:00.000Z,0,3,1,0

@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { empty, seed } from "../seed/seed.js";
 import { pool } from "../../src/config/database.js";
 import { users } from "../seed/model/user.js";
-import { DAY, HOUR, MINUTE, msFromNow, NOW, SECOND } from "../utils/date.js";
+import { DAY, HOUR, MINUTE, msFromNow, NOW, SECOND, YEAR } from "../utils/date.js";
 import { achievements } from "../seed/model/achievements.js";
 import { createTemperatureMeasurement } from "../../src/services/temperatureService.js";
 import { createTemperatureData } from "./builders/temperature.builder.js";
@@ -53,7 +53,7 @@ describe("temperatureService", () => {
 			longitude: validData.longitude,
 			data_type: validDataType,
 			user_id: validData.userId,
-			notes: validData.notes,
+			notes: validData.notes ?? null,
 			points_earned: expectedPoints,
 		});
 
@@ -140,13 +140,61 @@ describe("temperatureService", () => {
 		});
 	}
 
-	const invalidDates = [-MINUTE * 10, -HOUR, -HOUR * 10, -DAY - SECOND].forEach((time) => {
+	const invalidDates = [-MINUTE * 10, -HOUR, -HOUR * 10, -DAY - SECOND];
 
-		it(`it should reward less for duplicate submissions for resubmitting within ${time * -1} seconds`, async () => {
-			const invalidData = createTemperatureData().with("measurement_date", new Date(NOW + time).toISOString());
+	invalidDates.forEach((time) => {
+		it(`it should reward less for duplicate submissions for resubmitting within ${(time * -1) / SECOND} seconds`, async () => {
+			const first = createTemperatureData()
+				.with("measurement_date", new Date(NOW + time).toISOString())
+				.build();
+			const second = createTemperatureData()
+				.with("measurement_date", new Date(NOW).toISOString())
+				.build();
 
-			
+			const firstResult = await createTemperatureMeasurement(first);
+			const secondResult = await createTemperatureMeasurement(second);
+
+			expect(firstResult.id).not.toBe(secondResult.id);
+			expect(firstResult.user_id).toBe(secondResult.user_id);
+			expect(firstResult.latitude).toBe(secondResult.latitude);
+			expect(firstResult.longitude).toBe(secondResult.longitude);
+			expect(firstResult.temperature_data.value_celsius).toBe(
+				secondResult.temperature_data.value_celsius,
+			);
+			expect(firstResult.temperature_data.depth_meters).toBe(
+				secondResult.temperature_data.depth_meters,
+			);
+
+			expect(secondResult.points_earned).toBeLessThan(firstResult.points_earned);
 		});
 	});
 
+	const validDates = [DAY + SECOND, DAY + MINUTE, DAY + HOUR, DAY + DAY, DAY + YEAR];
+
+	validDates.forEach((time) => {
+		it(`it should reward the same for duplicate submissions for resubmitting after ${(time * -1) / SECOND} seconds`, async () => {
+			const first = createTemperatureData()
+				.with("measurement_date", new Date(NOW + time).toISOString())
+				.build();
+			const second = createTemperatureData()
+				.with("measurement_date", new Date(NOW).toISOString())
+				.build();
+
+			const firstResult = await createTemperatureMeasurement(first);
+			const secondResult = await createTemperatureMeasurement(second);
+
+			expect(firstResult.id).not.toBe(secondResult.id);
+			expect(firstResult.user_id).toBe(secondResult.user_id);
+			expect(firstResult.latitude).toBe(secondResult.latitude);
+			expect(firstResult.longitude).toBe(secondResult.longitude);
+			expect(firstResult.temperature_data.value_celsius).toBe(
+				secondResult.temperature_data.value_celsius,
+			);
+			expect(firstResult.temperature_data.depth_meters).toBe(
+				secondResult.temperature_data.depth_meters,
+			);
+
+			expect(secondResult.points_earned).toBe(firstResult.points_earned);
+		});
+	});
 });
