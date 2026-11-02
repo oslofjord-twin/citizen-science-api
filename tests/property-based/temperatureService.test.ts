@@ -52,7 +52,7 @@ describe("createTemperatureMeasurementService", () => {
 		await fc.assert(duplicateSubmissionRewardsLessWithinADay, settings);
 	});
 
-	it("it should reward same amount of points for dupliace submissions after a day", async () => {
+	it("it should reward same amount of points for duplicate submissions after a day", async () => {
 		await fc.assert(duplicateSubmissionRewardsTheSameAfterADay, settings);
 	});
 });
