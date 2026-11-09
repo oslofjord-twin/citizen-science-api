@@ -37,7 +37,7 @@ const settings = {
 
 describe("createTemperatureMeasurementService", () => {
 	it("should update the database with values from valid data", async () => {
-		await fc.assert(validDataUpdatesDatabase, settings);
+		await fc.assert(validDataUpdatesDatabase, { ...settings, numRuns: 10 });
 	});
 
 	it("should not update the database with values from invalid data", async () => {

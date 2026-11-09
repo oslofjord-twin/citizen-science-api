@@ -11,6 +11,44 @@ import { pool } from "../../../src/config/database";
 // createTemperatureMeasurement
 export const validDataUpdatesDatabase = fc.asyncProperty(validTemperatureData(NOW), async (validData) => {
 	const results = await createTemperatureMeasurement(validData);
+
+	const userResults = await pool.query(
+		`
+        SELECT total_points
+        FROM "user"
+		WHERE id = $1
+    `,
+		[validData.userId],
+	);
+
+	const measurementResults = await pool.query(`
+        SELECT id
+        FROM measurements	
+    `);
+
+	const temperatureDataResults = await pool.query(`
+        SELECT id
+        FROM temperature_data
+    `);
+
+	const userAchievementResults = await pool.query(`
+        SELECT user_id
+        FROM user_achievements	
+    `);
+
+	let rows = userResults.rows;
+	expect(rows[0]["total_points"]).toEqual(results.total_points);
+
+	rows = measurementResults.rows;
+	expect(rows).toHaveLength(1);
+
+	rows = temperatureDataResults.rows;
+	expect(rows).toHaveLength(1);
+
+	rows = userAchievementResults.rows;
+	expect(rows).toHaveLength(1);
+
+	return true;
 });
 
 export const invalidDataDoesntUpdateDatabase = fc.asyncProperty(invalidTemperatureData(NOW), async (invalidData) => {
