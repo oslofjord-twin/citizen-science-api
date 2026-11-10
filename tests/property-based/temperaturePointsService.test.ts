@@ -8,14 +8,14 @@ import {
 	pointsReturnsBaseValueOrMore,
 	pointsAlwaysIncreases,
 	pointsHandlesInfinity,
-} from "./properties/temperaturePointsService.properties";
+} from "./properties/temperaturePointsService.properties.ts";
 
 const settings = {
 	timeout: 1000,
 	verbose: 1,
 };
 
-describe("calculateLevel", { timeout: 10000 }, () => {
+describe("calculateLevel", { timeout: 1000 }, () => {
 	it("should always return only zero or more", async () => {
 		await assert(levelIsNeverNegative, settings);
 	});
@@ -40,11 +40,11 @@ describe("calculatePoints", () => {
 		await assert(pointsReturnsBaseValueOrMore, settings);
 	});
 
-	it("calculatePoints should return more points the bigger the depth", async () => {
+	it("should return more points the bigger the depth", async () => {
 		await assert(pointsAlwaysIncreases, settings);
 	});
 
-	it("caluclatePoints should handle pos/neg infinite depth values", async () => {
+	it("should handle pos/neg infinite depth values", async () => {
 		await assert(pointsHandlesInfinity, {
 			examples: [[Infinity], [-Infinity], [NaN]],
 			...settings,

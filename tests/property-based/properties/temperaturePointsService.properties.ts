@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { propertyFor } from "@fast-check/worker";
 import { calculateLevel, calculatePoints } from "../../../src/services/temperaturePointsService";
+import { BASE_VALUE } from "../../shared/calculatePoints.rules";
 
 // needed for creating workers
 const property = propertyFor(new URL(import.meta.url));
@@ -27,10 +28,8 @@ export const levelHandlesInfinity = property(fc.double(), (points) => {
 });
 
 //calculatePoints
-const baseValue = 5;
-
 export const pointsReturnsBaseValueOrMore = property(fc.double(), (depth) => {
-	return calculatePoints(depth) >= baseValue;
+	return calculatePoints(depth) >= BASE_VALUE;
 });
 
 export const pointsAlwaysIncreases = property(fc.double(), fc.double({ min: 1 }), (depth, x) => {

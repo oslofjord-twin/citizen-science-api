@@ -6,7 +6,7 @@ import {
 	invalidBodyRequestsGet400Response,
 	invalidUserRequestsGet401Response,
 	validBodyRequestsGet201Response,
-} from "./properties/temperatureController.properties";
+} from "./properties/temperatureController.properties.ts";
 import { NOW } from "../utils/date";
 
 vi.mock("../../src/services/temperatureService");
@@ -39,7 +39,7 @@ const settings = {
 	],
 };
 
-describe("createTemperatureMeasurement", () => {
+describe("createTemperatureMeasurementController", () => {
 	it("should return a response with status 201", async () => {
 		await fc.assert(validBodyRequestsGet201Response, settings);
 	});

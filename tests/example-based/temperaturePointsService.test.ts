@@ -1,9 +1,7 @@
 import { describe, expect, it, afterAll } from "vitest";
 import workerpool from "workerpool";
-import {
-	calculatePoints,
-	calculateLevel,
-} from "../../src/services/temperaturePointsService";
+import { calculatePoints, calculateLevel } from "../../src/services/temperaturePointsService";
+import { BASE_VALUE } from "../shared/calculatePoints.rules";
 
 const pool = workerpool.pool();
 afterAll(() => pool.terminate());
@@ -28,20 +26,13 @@ describe("calculateLevel", () => {
 	});
 
 	it("should require more points to get to the next level", () => {
-		const points = Array.from(
-			{ length: 1000 },
-			(_, index) => index,
-		);
+		const points = Array.from({ length: 1000 }, (_, index) => index);
 		const levels = points.map((points) => calculateLevel(points));
 		const levelsGrouped = Object.entries(
-			levels.reduce<Record<number, number>>(
-				(groupedLevels, level) => {
-					groupedLevels[level] =
-						(groupedLevels[level] ?? 0) + 1;
-					return groupedLevels;
-				},
-				{},
-			),
+			levels.reduce<Record<number, number>>((groupedLevels, level) => {
+				groupedLevels[level] = (groupedLevels[level] ?? 0) + 1;
+				return groupedLevels;
+			}, {}),
 		)
 			.slice(0, -1)
 			.map(([, count]) => count);
@@ -55,18 +46,14 @@ describe("calculateLevel", () => {
 	});
 
 	it("should handle positive infinite points", async () => {
-		const level = await pool
-			.exec(calculateLevel, [Infinity])
-			.timeout(1000);
+		const level = await pool.exec(calculateLevel, [Infinity]).timeout(1000);
 
 		expect(level).toBeTypeOf("number");
 		expect(level).not.toBeNaN();
 	});
 
 	it("should handle negative infinite points", async () => {
-		const level = await pool
-			.exec(calculateLevel, [-Infinity])
-			.timeout(1000);
+		const level = await pool.exec(calculateLevel, [-Infinity]).timeout(1000);
 
 		expect(level).toBeTypeOf("number");
 		expect(level).not.toBeNaN();
@@ -75,7 +62,7 @@ describe("calculateLevel", () => {
 
 describe("calculatePoints", () => {
 	it("calculatePoints should return base value when receiving zero depth", () => {
-		expect(calculatePoints(0)).toBe(5);
+		expect(calculatePoints(0)).toBe(BASE_VALUE);
 	});
 
 	it("should always return more than zero points", () => {
@@ -90,10 +77,7 @@ describe("calculatePoints", () => {
 
 		expect(
 			[0, 1, 2, 3, 4].every((index) => {
-				return (
-					mappedValues[index] <
-					mappedValues[index + 1]
-				);
+				return mappedValues[index] < mappedValues[index + 1];
 			}),
 		).toBe(true);
 	});

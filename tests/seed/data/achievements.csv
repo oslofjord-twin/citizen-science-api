@@ -1,3 +1,3 @@
 id,name,description,image_url,trigger_event,createdAt,updatedAt
-1,First Submission,Awarded after a users first submission,https://158.39.200.23.sslip.io/static/badges/achievements/achievement-01.png,Triggered when a user submits their first measurement,2025-10-31 12:11:06.997445,2025-10-31 12:11:06.997445
-2,10th Submission,Awarded after a users 10th submission,https://158.39.200.23.sslip.io/static/badges/achievements/achievement-02.png,Triggered when a user submits their 10th measurement,2025-10-31 12:11:45.617667,2025-10-31 12:11:45.617667
+1,First Submission,Awarded after a users first submission,https://158.39.200.23.sslip.io/static/badges/achievements/achievement-01.png,Triggered when a user submits their first measurement,2025-10-31T12:11:06.997445Z,2025-10-31T12:11:06.997445Z
+2,10th Submission,Awarded after a users 10th submission,https://158.39.200.23.sslip.io/static/badges/achievements/achievement-02.png,Triggered when a user submits their 10th measurement,2025-10-31T12:11:45.617667Z,2025-10-31T12:11:45.617667Z
