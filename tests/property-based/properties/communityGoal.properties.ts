@@ -1,83 +1,83 @@
 import fc from "fast-check";
 import { createTemperatureMeasurement } from "../../../src/services/temperatureService";
-import { DAY, NOW } from "../../utils/date";
-import { getLeaderboard } from "../../../src/services/userService";
-import { userIds } from "../../seed/model/user";
 import { validTemperatureData } from "../../shared/temperature.rules";
-import { calculateGini, calculateGiniNorm } from "../../utils/distribution";
-import { ACC } from "../generators/core/numbers";
+import { DAY, getDBNow, getStartOfPreviousWeek, getStartOfWeek, NOW } from "../../utils/date";
+import { userIds } from "../../seed/model/user";
+import { getWeeklyCommunityGoal } from "../../../src/services/communityService";
+import { pool } from "../../../src/config/database";
 
-const submitData = async (nSubmissions: number[]) => {
+const PROGRESS_THRESHOLD = 0.75;
+const BASE_POINT = 10; // equivilant to submitting 2 on the surface. No need for it now, but for later
+
+// adjusted to send it a week before for community goal
+// TODO: let time be a option
+
+// needs to be based on Date.now() since the database is set to use the current time
+const submitData = async (nSubmissions: number[], weekStart: Date) => {
+	let points = 0;
 	await Promise.all(
 		nSubmissions.map(async (n, index) => {
 			const uid = userIds[index];
 
 			for (let i = 1; i < n + 1; i++) {
-				await createTemperatureMeasurement({
+				const measurement = await createTemperatureMeasurement({
 					...validTemperatureData,
 					userId: uid,
-					measurement_date: new Date(NOW + i + DAY * i).toISOString(),
+					measurement_date: new Date(weekStart.getTime() + DAY * i + i).toISOString(),
 				});
+
+				await pool.query(`UPDATE measurements SET created_at = "timestamp" WHERE id = $1`, [
+					measurement.id,
+				]);
+
+				points += measurement.points_earned;
 			}
 		}),
 	);
+	return points;
 };
 
-export const leaderboardIsSortedWhenFetched = fc.asyncProperty(
-	fc
-		.integer({ min: 2, max: 10 })
-		.chain((t) => fc.array(fc.integer({ min: 10, max: 164 }), { minLength: t, maxLength: t })),
-	async (nSubmissions) => {
-		await submitData(nSubmissions);
+const startOfCurrentWeek = getStartOfWeek((await getDBNow()).getTime());
+const startOfPreviousWeek = getStartOfPreviousWeek(startOfCurrentWeek.getTime());
 
-		const limit = nSubmissions.length;
-		const result = (await getLeaderboard(limit)) as any[];
+export const communityGoalOnlyCountsCurrentWeek = fc.asyncProperty(
+	fc.context(),
+	fc.array(fc.integer({ min: 0, max: 4 }), { minLength: 0, maxLength: 10, size: "large" }),
+	fc.array(fc.integer({ min: 0, max: 4 }), { minLength: 0, maxLength: 10, size: "large" }),
+	async (ctx, previousWeekSubmissions, currentWeekSubmissions) => {
+		const currentWeekPoints = await submitData(currentWeekSubmissions, startOfCurrentWeek);
+		const previousWeekPoints = await submitData(previousWeekSubmissions, startOfPreviousWeek);
 
-		const keepsLength = result.length == nSubmissions.length;
-		const descendingOrder = result.every((val, index) => {
-			const nextVal = result[index + 1];
-			return index != result.length - 1
-				? val.total_points != nextVal.total_points
-					? val.total_points > nextVal.total_points
-					: val.name < nextVal.name
-				: true;
-		}); // cursed
-		return keepsLength && descendingOrder;
+		const result = await getWeeklyCommunityGoal();
+
+		ctx.log(`current=${currentWeekPoints} previous=${previousWeekPoints} result=${result.current_points}`);
+
+		return result.current_points === currentWeekPoints;
 	},
 );
 
-const GINI_THRESHOLD = 0.3;
+export const communityGoalHasGoalBasedOnPreviousWeek = fc.asyncProperty(fc.context(), async (ctx) => {
+	const previousWeekPoints = await submitData([], startOfPreviousWeek);
 
-export const leaderboardOpholdsGiniThreshold = fc.asyncProperty(
-	fc
-		.integer({ min: 5, max: 10 })
-		.chain((t) => fc.array(fc.integer({ min: 10, max: 164 }), { minLength: t, maxLength: t })),
-	async (nSubmissions) => {
-		await submitData(nSubmissions);
+	const result = await getWeeklyCommunityGoal();
 
-		const limit = nSubmissions.length;
-		const result = (await getLeaderboard(limit)) as any[];
+	ctx.log(
+		`currentGoal=${result.goal_points} previousPoints=${previousWeekPoints} ratio=${previousWeekPoints / result.goal_points}`,
+	);
 
-		const giniNorm = calculateGiniNorm(result.map((user) => user.total_points));
+	// never too high or its never below previous week
+	return (
+		previousWeekPoints >= result.goal_points * PROGRESS_THRESHOLD &&
+		!(result.goal_points < previousWeekPoints)
+	);
+});
 
-		return giniNorm < GINI_THRESHOLD;
-	}, // should it be gini per iteration?
-);
+export const communityGoalHasGoalBasedOnNoPlayers = fc.asyncProperty(fc.context(), async (ctx) => {
+	const result = await getWeeklyCommunityGoal();
 
-export const leaderboardScoreGiniIsLessOrEqualActivityGini = fc.asyncProperty(
-	fc
-		.integer({ min: 5, max: 10 })
-		.chain((t) => fc.array(fc.integer({ min: 10, max: 164 }), { minLength: t, maxLength: t })),
-	async (nSubmissions) => {
-		const sortedSubmissions = nSubmissions.sort((a, b) => b - a);
-		await submitData(sortedSubmissions);
+	ctx.log(
+		`currentGoal=${result.goal_points} previousPoints=${BASE_POINT} ratio=${BASE_POINT / result.goal_points}`,
+	);
 
-		const limit = sortedSubmissions.length;
-		const result = (await getLeaderboard(limit)) as any[];
-
-		const scoreGini = calculateGiniNorm(result.map((user) => user.total_points));
-		const activityGini = calculateGiniNorm(sortedSubmissions);
-
-		return scoreGini <= activityGini + ACC; // rounding errors
-	},
-);
+	return BASE_POINT >= result.goal_points * PROGRESS_THRESHOLD;
+});

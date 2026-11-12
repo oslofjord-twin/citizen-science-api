@@ -4,7 +4,7 @@ import { DAY, NOW } from "../../utils/date";
 import { getLeaderboard } from "../../../src/services/userService";
 import { userIds } from "../../seed/model/user";
 import { validTemperatureData } from "../../shared/temperature.rules";
-import { calculateGini, calculateGiniNorm } from "../../utils/distribution";
+import { calculateGiniNorm } from "../../utils/distribution";
 import { ACC } from "../generators/core/numbers";
 
 const submitData = async (nSubmissions: number[]) => {
