@@ -21,38 +21,91 @@ afterAll(async () => {
 	await client.end();
 });
 
+const common = {
+	emailVerified: true,
+	image: null,
+	createdAt: new Date("2026-01-01 12:00:00.000"),
+	updatedAt: new Date("2026-01-01 12:00:00.000"),
+	total_points: 0,
+	avatar_id: 1,
+	badge_id: 1,
+	failed_attempts: 0,
+	lockout_until: null,
+};
+
 const seededData = {
 	users: [
 		{
+			...common,
 			id: "5a105e8b9d40e1329780d62ea2265d8a",
 			name: "bob marley",
 			email: "bob-marley@gmail.com",
-			emailVerified: true,
-			image: null,
-			createdAt: new Date("2026-01-01 12:00:00.000"),
-			updatedAt: new Date("2026-01-01 12:00:00.000"),
-			total_points: 0,
 			level: 1,
-			avatar_id: 1,
-			badge_id: 1,
-			failed_attempts: 0,
-			lockout_until: null,
-		},
+		}, // one
 		{
+			...common,
 			id: "ad0234829205b9033196ba818f7a872b",
 			name: "alice cooper",
 			email: "alice-cooper@gmail.com",
-			emailVerified: true,
-			image: null,
-			createdAt: new Date("2026-01-02 12:00:00.000"),
-			updatedAt: new Date("2026-01-02 12:00:00.000"),
-			total_points: 0,
 			level: 1,
 			avatar_id: 2,
-			badge_id: 1,
-			failed_attempts: 0,
-			lockout_until: null,
-		},
+		}, // two
+		{
+			...common,
+			id: "8ad8757baa8564dc136c1e07507f4a98",
+			name: "stevie wonder",
+			email: "steview-wonder@gmail.com",
+			level: 3,
+		}, // three
+		{
+			...common,
+			id: "86985e105f79b95d6bc918fb45ec7727",
+			name: "micheal jackson",
+			email: "micheal-jackson@gmail.com",
+			level: 1,
+		}, // four
+		{
+			...common,
+			id: "e3d704f3542b44a621ebed70dc0efe13",
+			name: "frank sinatra",
+			email: "frank-sinatra@gmail.com",
+			level: 2,
+		}, // five
+		{
+			...common,
+			id: "4cfad7076129962ee70c36839a1e3e15",
+			name: "freddy mercury",
+			email: "freddy-mercury@gmail.com",
+			level: 3,
+		}, // six
+		{
+			...common,
+			id: "b04083e53e242626595e2b8ea327e525",
+			name: "mario mario",
+			email: "mario-mario@gmail.com",
+			level: 1,
+		}, // seven
+		{
+			...common,
+			id: "5e40d09fa0529781afd1254a42913847",
+			name: "luigi mario",
+			email: "luigi-mario@gmail.com",
+			level: 2,
+		}, // eight
+		{
+			...common,
+			id: "739969b53246b2c727850dbb3490ede6",
+			name: "donkey kong",
+			email: "donkey-kong@gmail.com",
+			level: 3,
+		}, // nine
+		{
+			...common,
+			id: "c1a8e059bfd1e911cf10b626340c9a54",
+			name: "mickey mouse",
+			email: "mickey-mouse@gmail.com",
+			level: 1,
+		}, // ten
 	],
 	achievements: [
 		{
@@ -212,7 +265,7 @@ describe("seed", () => {
 	});
 
 	it("user are seeded", async () => {
-		const { rows } = await client.query(`SELECT * FROM "user" ORDER BY avatar_id`);
+		const { rows } = await client.query(`SELECT * FROM "user"`);
 		expect(rows).toEqual(seededData.users);
 	});
 
@@ -234,9 +287,20 @@ describe("seed", () => {
 		expect(rows).toEqual(seededData.badges);
 	});
 
-	it("typescript objects are exists", async () => {
+	it("typescript objects exists", async () => {
 		// .one .two and so on is by id
-		expect([users.one, users.two]).toEqual(seededData.users);
+		expect([
+			users.one,
+			users.two,
+			users.three,
+			users.four,
+			users.five,
+			users.six,
+			users.seven,
+			users.eight,
+			users.nine,
+			users.ten,
+		]).toEqual(seededData.users);
 		expect([
 			badges.one,
 			badges.two,
