@@ -1,4 +1,4 @@
-import fc, { Arbitrary, Value, Stream, type Random } from "fast-check";
+import { Arbitrary, Value, Stream, type Random } from "fast-check";
 import { Leaderboard } from "../../seed/model/leaderboard.ts";
 
 class LeaderboardArbitrary extends Arbitrary<Leaderboard> {

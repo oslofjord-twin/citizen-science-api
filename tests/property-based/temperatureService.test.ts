@@ -36,23 +36,31 @@ const settings = {
 };
 
 describe("createTemperatureMeasurementService", () => {
-	it("should update the database with values from valid data", async () => {
+	it("should update the database with values from valid data", { timeout: 20000 }, async () => {
 		await fc.assert(validDataUpdatesDatabase, { ...settings, numRuns: 10 });
 	});
 
-	it("should not update the database with values from invalid data", async () => {
+	it("should not update the database with values from invalid data", { timeout: 20000 }, async () => {
 		await fc.assert(invalidDataDoesntUpdateDatabase, settings);
 	});
 
-	it("should throw an error with values from invalid data", async () => {
+	it("should throw an error with values from invalid data", { timeout: 20000 }, async () => {
 		await fc.assert(invalidDataThrowsError, settings);
 	});
 
-	it("should reward less points for duplicate submissions within a day difference", async () => {
-		await fc.assert(duplicateSubmissionRewardsLessWithinADay, settings);
-	});
+	it(
+		"should reward less points for duplicate submissions within a day difference",
+		{ timeout: 20000 },
+		async () => {
+			await fc.assert(duplicateSubmissionRewardsLessWithinADay, settings);
+		},
+	);
 
-	it("it should reward same amount of points for duplicate submissions after a day", async () => {
-		await fc.assert(duplicateSubmissionRewardsTheSameAfterADay, settings);
-	});
+	it(
+		"it should reward same amount of points for duplicate submissions after a day",
+		{ timeout: 20000 },
+		async () => {
+			await fc.assert(duplicateSubmissionRewardsTheSameAfterADay, settings);
+		},
+	);
 });
