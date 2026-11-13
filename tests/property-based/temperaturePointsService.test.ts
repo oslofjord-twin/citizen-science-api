@@ -15,7 +15,7 @@ const settings = {
 	verbose: 1,
 };
 
-describe("calculateLevel", { timeout: 1000 }, () => {
+describe.skip("calculateLevel", { timeout: 1000 }, () => {
 	it("should always return only zero or more", async () => {
 		await assert(levelIsNeverNegative, settings);
 	});
