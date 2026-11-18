@@ -1,6 +1,27 @@
+import { pool } from "../../src/config/database";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { Client, Pool } from "pg";
+import { userIds } from "./model/user";
+import { auth } from "../../src/auth";
+import { v4 as uuidv4 } from "uuid";
+
+export const SEED_PASSWORD = "!Pass123";
+
+const seedPasswords = async (userIds: readonly string[]) => {
+	const ctx = await auth.$context;
+	const hash = await ctx.password.hash(SEED_PASSWORD);
+	for (const userId of userIds) {
+		await pool.query(
+			`
+			INSERT INTO account (id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt")
+			VALUES ($1, $2, 'credential', $2, $3, NOW(), NOW())
+			ON CONFLICT DO NOTHING;	
+		`,
+			[uuidv4(), userId, hash],
+		);
+	}
+};
 
 export async function createSchema(c: Client | Pool) {
 	const query = readFileSync(join(import.meta.dirname, "schema.sql"), "utf8");
@@ -27,6 +48,8 @@ export async function seed(c: Client | Pool) {
             COPY "${name}" FROM '/seed/data/${name}.csv' WITH (FORMAT csv, HEADER match, ENCODING 'UTF8')
         `);
 	}
+
+	await seedPasswords(userIds);
 }
 
 export async function empty(c: Client | Pool) {

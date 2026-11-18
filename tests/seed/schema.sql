@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS avatars, badges, achievements, "user", measurements, temperature_data, user_achievements CASCADE;
-
+DROP TABLE IF EXISTS avatars, badges, achievements, "user", session, account, verification, measurements, temperature_data, user_achievements CASCADE;
 
 CREATE TABLE avatars (
     id INTEGER PRIMARY KEY,
@@ -56,6 +55,41 @@ CREATE TABLE "user" (
         ON DELETE SET NULL
 );
 
+CREATE TABLE session (
+    id TEXT PRIMARY KEY,
+    "expiresAt" TIMESTAMP NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE
+);
+
+CREATE TABLE account (
+    id TEXT PRIMARY KEY,
+    "accountId" TEXT NOT NULL,
+    "providerId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    "accessToken" TEXT,
+    "refreshToken" TEXT,
+    "idToken" TEXT,
+    "accessTokenExpiresAt" TIMESTAMP,
+    "refreshTokenExpiresAt" TIMESTAMP,
+    scope TEXT,
+    password TEXT,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE verification (
+    id TEXT PRIMARY KEY,
+    identifier TEXT NOT NULL,
+    value TEXT NOT NULL,
+    "expiresAt" TIMESTAMP NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE measurements (
     id TEXT PRIMARY KEY,
     latitude NUMERIC NOT NULL,
@@ -65,8 +99,8 @@ CREATE TABLE measurements (
     user_id TEXT NOT NULL,
     notes TEXT,
     quality_flag TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     points_earned INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT measurement_latitude_check
@@ -87,8 +121,8 @@ CREATE TABLE temperature_data (
     depth_meters NUMERIC,
     instrument_type TEXT,
     notes TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT temperature_depth_check
         CHECK (depth_meters >= 0 AND depth_meters <= 260),

@@ -22,6 +22,12 @@ const getUserById = (id: string) => {
 	return user;
 };
 
+export const getUserByMail = (email: string) => {
+	const user: User | undefined = (rows as User[]).find((row) => row.email === email);
+	if (!user) throw new Error(`Could not find user with email: ${email}`);
+	return user;
+};
+
 export const users = Object.freeze({
 	one: getUserById("5a105e8b9d40e1329780d62ea2265d8a"),
 	two: getUserById("ad0234829205b9033196ba818f7a872b"),

@@ -1,10 +1,11 @@
 import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { empty, seed } from "../seed/seed.ts";
+import { empty, seed, SEED_PASSWORD } from "../seed/seed.ts";
 import { users } from "../seed/model/user.js";
 import { badges } from "../seed/model/badges.js";
 import { avatars } from "../seed/model/avatars.js";
 import { achievements } from "../seed/model/achievements.js";
+import { auth } from "../../src/auth.ts";
 
 const client = new Client({ connectionString: process.env.DATABASE_URL });
 
@@ -245,6 +246,58 @@ const seededData = {
 			updatedAt: new Date("2025-11-03 10:06:22.539813"),
 		},
 	],
+	accounts: [
+		{
+			accountId: "5a105e8b9d40e1329780d62ea2265d8a",
+			userId: "5a105e8b9d40e1329780d62ea2265d8a",
+			accessToken: null,
+		},
+		{
+			accountId: "ad0234829205b9033196ba818f7a872b",
+			userId: "ad0234829205b9033196ba818f7a872b",
+			accessToken: null,
+		},
+		{
+			accountId: "8ad8757baa8564dc136c1e07507f4a98",
+			userId: "8ad8757baa8564dc136c1e07507f4a98",
+			accessToken: null,
+		},
+		{
+			accountId: "86985e105f79b95d6bc918fb45ec7727",
+			userId: "86985e105f79b95d6bc918fb45ec7727",
+			accessToken: null,
+		},
+		{
+			accountId: "e3d704f3542b44a621ebed70dc0efe13",
+			userId: "e3d704f3542b44a621ebed70dc0efe13",
+			accessToken: null,
+		},
+		{
+			accountId: "4cfad7076129962ee70c36839a1e3e15",
+			userId: "4cfad7076129962ee70c36839a1e3e15",
+			accessToken: null,
+		},
+		{
+			accountId: "b04083e53e242626595e2b8ea327e525",
+			userId: "b04083e53e242626595e2b8ea327e525",
+			accessToken: null,
+		},
+		{
+			accountId: "5e40d09fa0529781afd1254a42913847",
+			userId: "5e40d09fa0529781afd1254a42913847",
+			accessToken: null,
+		},
+		{
+			accountId: "739969b53246b2c727850dbb3490ede6",
+			userId: "739969b53246b2c727850dbb3490ede6",
+			accessToken: null,
+		},
+		{
+			accountId: "c1a8e059bfd1e911cf10b626340c9a54",
+			userId: "c1a8e059bfd1e911cf10b626340c9a54",
+			accessToken: null,
+		},
+	],
 };
 
 describe("seed", () => {
@@ -254,13 +307,16 @@ describe("seed", () => {
 		);
 
 		expect(rows.map((e) => e.table_name)).toEqual([
+			"account", // auth
 			"achievements",
 			"avatars",
 			"badges",
 			"measurements",
+			"session", // auth
 			"temperature_data",
-			"user",
+			"user", // auth + custom
 			"user_achievements",
+			"verification", // auth
 		]);
 	});
 
@@ -285,6 +341,21 @@ describe("seed", () => {
 		const { rows } = await client.query(`SELECT * FROM badges ORDER BY id`);
 
 		expect(rows).toEqual(seededData.badges);
+	});
+
+	it("accounts are seeded", async () => {
+		const { rows } = await client.query(
+			`SELECT "accountId", "userId", "accessToken", password FROM account`,
+		);
+
+		expect(rows.map(({ accountId, userId, accessToken }) => ({ accountId, userId, accessToken }))).toEqual(
+			seededData.accounts,
+		);
+
+		const ctx = await auth.$context;
+		for (const row of rows) {
+			expect(await ctx.password.verify({ hash: row.password, password: SEED_PASSWORD })).toBe(true);
+		}
 	});
 
 	it("typescript objects exists", async () => {
