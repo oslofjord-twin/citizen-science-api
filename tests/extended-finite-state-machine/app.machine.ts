@@ -1,9 +1,22 @@
 import { setup, assign, assertEvent, fromPromise } from "xstate";
-import { getUserByMail, User } from "../seed/model/user";
 import { AppEvents } from "./app.events";
-import { createTemperatureMeasurement, CreateTemperatureMeasurementData } from "../../src/services/temperatureService";
+import { CreateTemperatureMeasurementData } from "../../src/services/temperatureService";
 import { isWithinOslofjord } from "../../src/utils/geoUtil";
 import { errorMessage, services } from "./app.services";
+import {
+	Session,
+	AppContext,
+	LoginCredentials,
+	SignupCredentials,
+	ChangePasswordInput,
+	DeleteAccountInput,
+	MeasurementResult,
+	MeasurementInput,
+	AvatarResult,
+	AvatarInput,
+	DeleteMeasurementResult,
+	DeleteMeasurementInput,
+} from "./app.types";
 
 const isValidMeasurement = (data: Partial<CreateTemperatureMeasurementData>): boolean => {
 	const { userId, value_celsius, depth_meters, instrument_type, latitude, longitude, measurement_date, notes } =
@@ -25,49 +38,6 @@ const isValidMeasurement = (data: Partial<CreateTemperatureMeasurementData>): bo
 	);
 };
 
-export type Session = { user: User; cookie: string };
-
-type AppContext = {
-	user: User | null;
-	cookie: string | null;
-	error: string | null;
-};
-
-export type LoginCredentials = {
-	email: string;
-	password: string;
-};
-
-export type SignupCredentials = {
-	name: string;
-	email: string;
-	password: string;
-};
-
-export type ChangePasswordInput = {
-	currentPassword: string;
-	newPassword: string;
-};
-
-export type DeleteAccountInput = {
-	password: string;
-};
-
-export type MeasurementResult = {
-	id: any;
-	latitude: any;
-	longitude: any;
-	timestamp: any;
-	data_type: any;
-	user_id: any;
-	notes: any;
-	created_at: any;
-	points_earned: number;
-	total_points: number;
-	level: number;
-	temperature_data: any;
-};
-
 export const appMachine = setup({
 	types: {
 		context: {} as AppContext,
@@ -83,12 +53,17 @@ export const appMachine = setup({
 		deleteAccount: fromPromise<void, DeleteAccountInput & { cookie: string }>(({ input }) =>
 			services.deleteAccount(input.password, input.cookie),
 		),
-		sendSubmission: fromPromise<
-			MeasurementResult,
-			{ data: CreateTemperatureMeasurementData; cookie: string }
-		>(({ input }) => {
-			return services.submitMeasurement(input.data, input.cookie);
-		}),
+		sendSubmission: fromPromise<MeasurementResult, { data: MeasurementInput; cookie: string }>(
+			({ input }) => {
+				return services.submitMeasurement(input.data, input.cookie);
+			},
+		),
+		changeAvatar: fromPromise<AvatarResult, AvatarInput & { cookie: string }>(({ input }) =>
+			services.changeAvatar(input.avatarId, input.cookie),
+		),
+		deleteMeasurement: fromPromise<DeleteMeasurementResult, DeleteMeasurementInput & { cookie: string }>(
+			({ input }) => services.deleteMeasurement(input.measurementId, input.cookie),
+		),
 	},
 	guards: {
 		isValidSubmission: ({ event }) => event.type === "submit.send" && isValidMeasurement(event.data),
@@ -174,9 +149,9 @@ export const appMachine = setup({
 		authorized: {
 			initial: "home",
 			on: {
-				"tab.home": ".home",
-				"tab.submitData": ".submitData",
-				"tab.profile": ".profile",
+				"tab.home": { target: ".home", actions: "clearError" },
+				"tab.submitData": { target: ".submitData", actions: "clearError" },
+				"tab.profile": { target: ".profile", actions: "clearError" },
 			},
 			states: {
 				home: {
@@ -191,12 +166,12 @@ export const appMachine = setup({
 						},
 						leaderboard: {
 							on: {
-								back: "overview",
+								back: { target: "overview", actions: "clearError" },
 							},
 						},
 						communityGoal: {
 							on: {
-								back: "overview",
+								back: { target: "overview", actions: "clearError" },
 							},
 						},
 					},
@@ -234,15 +209,7 @@ export const appMachine = setup({
 								onDone: {
 									target: "reward",
 									actions: assign({
-										user: ({ context, event }) =>
-											context.user && {
-												...context.user,
-												total_points:
-													event.output
-														.total_points,
-												level: event.output
-													.level,
-											},
+										user: ({ event }) => event.output.user,
 									}),
 								},
 								onError: {
@@ -256,7 +223,7 @@ export const appMachine = setup({
 						},
 						reward: {
 							on: {
-								back: "form",
+								back: { target: "form", actions: "clearError" },
 							},
 						},
 					},
@@ -267,27 +234,78 @@ export const appMachine = setup({
 						overview: {
 							on: {
 								"profile.openAchievements": "achievements",
-								"profile.openSubmissions": "submissions",
+								"profile.openMeasurements": "measurements",
 								"profile.openAvatars": "avatars",
 								"profile.openChangePassword": "changePassword",
 								"profile.openDeleteAccount": "deleteAccount",
+								"profile.signOut": "signOut",
 							},
 						},
 						achievements: {
 							on: {
-								back: "overview",
+								back: { target: "overview", actions: "clearError" },
 							},
 						},
-						submissions: {
+						measurements: {
 							on: {
-								back: "overview",
-								edit: "edit", // TODO: add edit or delete submissions action
+								back: { target: "overview", actions: "clearError" },
+								"profile.deleteMeasurement": "deletingMeasurement",
+							},
+						},
+						deletingMeasurement: {
+							invoke: {
+								src: "deleteMeasurement",
+								input: ({ context, event }) => {
+									assertEvent(event, "profile.deleteMeasurement");
+									return {
+										measurementId: event.measurementId,
+										cookie: context.cookie!,
+									};
+								},
+								onDone: {
+									target: "measurements",
+									actions: assign({
+										user: ({ event }) => event.output.user,
+									}),
+								},
+								onError: {
+									target: "measurements",
+									actions: assign({
+										error: ({ event }) =>
+											errorMessage(event.error),
+									}),
+								},
 							},
 						},
 						avatars: {
 							on: {
-								back: "overview",
-								select: "select", // TODO: add select new avatar action
+								back: { target: "overview", actions: "clearError" },
+								"profile.changeAvatar": "changingAvatar",
+							},
+						},
+						changingAvatar: {
+							invoke: {
+								src: "changeAvatar",
+								input: ({ context, event }) => {
+									assertEvent(event, "profile.changeAvatar");
+									return {
+										avatarId: event.avatarId,
+										cookie: context.cookie!,
+									};
+								},
+								onDone: {
+									target: "avatars",
+									actions: assign({
+										user: ({ event }) => event.output.user,
+									}),
+								},
+								onError: {
+									target: "avatars",
+									actions: assign({
+										error: ({ event }) =>
+											errorMessage(event.error),
+									}),
+								},
 							},
 						},
 						changePassword: {

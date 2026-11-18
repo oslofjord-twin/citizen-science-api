@@ -1,8 +1,19 @@
 import { pool } from "../../src/config/database";
 import { auth } from "../../src/auth";
 import { createTemperatureMeasurement, CreateTemperatureMeasurementData } from "../../src/services/temperatureService";
-import { ChangePasswordInput, DeleteAccountInput, LoginCredentials, Session, SignupCredentials } from "./app.machine";
+import {
+	AvatarResult,
+	ChangePasswordInput,
+	DeleteMeasurementResult,
+	LoginCredentials,
+	MeasurementInput,
+	MeasurementResult,
+	Session,
+	SignupCredentials,
+} from "./app.types";
 import { User } from "../seed/model/user";
+import { assignAvatarToUser } from "services/avatarService";
+import { deleteMeasurement } from "services/measurementService";
 
 const cookieToHeaders = (cookie: string) => new Headers({ cookie });
 
@@ -34,16 +45,16 @@ const getUserFromDb = async (userId: string) => {
 export const errorMessage = (err: unknown) => (err instanceof Error ? err.message : "Something went wrong");
 
 export const services = {
-	logIn: async (input: LoginCredentials): Promise<Session> => {
-		const { headers } = await auth.api.signInEmail({ body: input, returnHeaders: true });
+	logIn: async (credentials: LoginCredentials): Promise<Session> => {
+		const { headers } = await auth.api.signInEmail({ body: credentials, returnHeaders: true });
 		const cookie = headersToCookie(headers);
 		const userId = await getUserIdFromCookie(cookie);
 		const user = await getUserFromDb(userId);
 		return { user: user, cookie: cookie };
 	},
 
-	signUp: async (input: SignupCredentials): Promise<Session> => {
-		const { headers } = await auth.api.signUpEmail({ body: input, returnHeaders: true });
+	signUp: async (credentials: SignupCredentials): Promise<Session> => {
+		const { headers } = await auth.api.signUpEmail({ body: credentials, returnHeaders: true });
 		const cookie = headersToCookie(headers);
 		const userId = await getUserIdFromCookie(cookie);
 		const user = await getUserFromDb(userId);
@@ -54,9 +65,9 @@ export const services = {
 		await auth.api.signOut({ headers: cookieToHeaders(cookie) });
 	},
 
-	changePassword: async (input: ChangePasswordInput, cookie: string): Promise<void> => {
+	changePassword: async (passwords: ChangePasswordInput, cookie: string): Promise<void> => {
 		await auth.api.changePassword({
-			body: { ...input, revokeOtherSessions: false },
+			body: { ...passwords, revokeOtherSessions: false },
 			headers: cookieToHeaders(cookie),
 		});
 	},
@@ -68,11 +79,27 @@ export const services = {
 		});
 	},
 
-	submitMeasurement: async (input: Omit<CreateTemperatureMeasurementData, "userId">, cookie: string) => {
+	submitMeasurement: async (input: MeasurementInput, cookie: string): Promise<MeasurementResult> => {
 		const userId = await getUserIdFromCookie(cookie);
-		return createTemperatureMeasurement({
+		const result = await createTemperatureMeasurement({
 			...input,
 			userId: userId,
 		});
+		const updatedUser = await getUserFromDb(userId);
+		return { ...result, user: updatedUser };
+	},
+
+	changeAvatar: async (avatarId: string, cookie: string): Promise<AvatarResult> => {
+		const userId = await getUserIdFromCookie(cookie);
+		await assignAvatarToUser(userId, Number(avatarId));
+		const updatedUser = await getUserFromDb(userId);
+		return { user: updatedUser };
+	},
+
+	deleteMeasurement: async (measurementId: string, cookie: string): Promise<DeleteMeasurementResult> => {
+		const userId = await getUserIdFromCookie(cookie);
+		await deleteMeasurement(userId, measurementId);
+		const updatedUser = await getUserFromDb(userId);
+		return { user: updatedUser };
 	},
 };

@@ -1,5 +1,12 @@
 import { CreateTemperatureMeasurementData } from "services/temperatureService";
-import { ChangePasswordInput, DeleteAccountInput, LoginCredentials, SignupCredentials } from "./app.machine";
+import {
+	AvatarInput,
+	ChangePasswordInput,
+	DeleteAccountInput,
+	DeleteMeasurementInput,
+	LoginCredentials,
+	SignupCredentials,
+} from "./app.types";
 
 export type AppEvents =
 	// auth
@@ -24,12 +31,14 @@ export type AppEvents =
 	| { type: "submit.close" }
 
 	// profile
-	| { type: "profile.openSubmissions" }
 	| { type: "profile.openAchievements" }
+	| { type: "profile.openMeasurements" }
+	| ({ type: "profile.deleteMeasurement" } & DeleteMeasurementInput)
 	| { type: "profile.openAvatars" }
+	| ({ type: "profile.changeAvatar" } & AvatarInput)
 	| { type: "profile.openChangePassword" }
-	| { type: "profile.openDeleteAccount" }
 	| ({ type: "profile.changePassword" } & ChangePasswordInput)
+	| { type: "profile.openDeleteAccount" }
 	| ({ type: "profile.confirmDeleteAccount" } & DeleteAccountInput)
 	| { type: "profile.signOut" }
 	| { type: "profile.confirmSignOut" }
