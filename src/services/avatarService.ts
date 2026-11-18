@@ -1,8 +1,8 @@
 import { pool } from "../config/database.js";
 
 export const getAllAvatars = async () => {
-    const result = await pool.query(
-        `
+	const result = await pool.query(
+		`
     SELECT
       id,
       name,
@@ -10,36 +10,33 @@ export const getAllAvatars = async () => {
       image_url
     FROM avatars
     ORDER BY id ASC;
-    `
-    );
+    `,
+	);
 
-    return result.rows;
+	return result.rows;
 };
 
 export const assignAvatarToUser = async (userId: string, avatarId: number) => {
-    const { rows: avatarRows } = await pool.query(
-        `SELECT id FROM avatars WHERE id = $1;`,
-        [avatarId]
-    );
+	const { rows: avatarRows } = await pool.query(`SELECT id FROM avatars WHERE id = $1;`, [avatarId]);
 
-    if (avatarRows.length === 0) {
-        throw new Error(`Avatar with id ${avatarId} does not exist.`);
-    }
+	if (avatarRows.length === 0) {
+		throw new Error(`Avatar with id ${avatarId} does not exist.`);
+	}
 
-    const { rows: updatedUser } = await pool.query(
-        `
+	const { rows: updatedUser } = await pool.query(
+		`
     UPDATE "user"
     SET avatar_id = $1,
         "updatedAt" = NOW()
     WHERE id = $2
     RETURNING id, name, avatar_id;
     `,
-        [avatarId, userId]
-    );
+		[avatarId, userId],
+	);
 
-    if (updatedUser.length === 0) {
-        throw new Error("User not found");
-    }
+	if (updatedUser.length === 0) {
+		throw new Error("User not found");
+	}
 
-    return updatedUser[0];
+	return updatedUser[0];
 };

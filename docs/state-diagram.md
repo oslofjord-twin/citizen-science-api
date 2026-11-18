@@ -23,6 +23,8 @@ stateDiagram-v2
 
     [*] --> logIn
     logIn --> signUp : Sign Up
+    signUp --> home : Create User
+    signUp --> logIn : Log In
     logIn --> home : Log In
     home --> leaderboard
     home --> communityGoal
@@ -64,5 +66,4 @@ stateDiagram-v2
     class submitData, selectLocation, reward data
     class profile, mySubmissions, achievements, avatars, changePassword profile
     class deleteAccount danger
-
 ```
