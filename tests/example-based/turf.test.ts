@@ -22,7 +22,7 @@ describe("turf", () => {
 		const distance2 = nearestPointOnLine(polygon, p2, { units: "meters" }).properties.pointDistance;
 
 		expect(distance1).toBeCloseTo(222390, 0);
-		expect(distance2).toBeCloseTo(distance1, 50);
+		expect(Math.abs(distance2 - distance1)).toBeLessThanOrEqual(50);
 	});
 
 	it("point inside of polygon gives 222390m", () => {

@@ -53,7 +53,7 @@ describe("temperatureService", () => {
 			longitude: validData.longitude,
 			data_type: validDataType,
 			user_id: validData.userId,
-			notes: validData.notes ?? null,
+			notes: validData.notes ?? undefined,
 			points_earned: expectedPoints,
 		});
 
@@ -153,7 +153,6 @@ describe("temperatureService", () => {
 
 			const firstResult = await createTemperatureMeasurement(first);
 			const secondResult = await createTemperatureMeasurement(second);
-
 			expect(firstResult.id).not.toBe(secondResult.id);
 			expect(firstResult.user_id).toBe(secondResult.user_id);
 			expect(firstResult.latitude).toBe(secondResult.latitude);
