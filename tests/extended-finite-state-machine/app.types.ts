@@ -1,3 +1,4 @@
+import { CreateTemperatureMeasurementData } from "services/temperatureService";
 import { User } from "../seed/model/user";
 
 export type Session = { user: User; cookie: string };

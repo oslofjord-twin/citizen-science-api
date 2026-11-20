@@ -147,18 +147,28 @@ export const appMachine = setup({
 		},
 
 		authorized: {
+			id: "authorized",
 			initial: "home",
-			on: {
-				"tab.home": { target: ".home", actions: "clearError" },
-				"tab.submitData": { target: ".submitData", actions: "clearError" },
-				"tab.profile": { target: ".profile", actions: "clearError" },
-			},
 			states: {
 				home: {
+					id: "home",
 					initial: "overview",
 					states: {
 						overview: {
 							on: {
+								"tab.home": {
+									target: "#app.authorized.home",
+									actions: "clearError",
+								},
+								"tab.submitData": {
+									target: "#app.authorized.submitData",
+									actions: "clearError",
+								},
+								"tab.profile": {
+									target: "#app.authorized.profile",
+									actions: "clearError",
+								},
+
 								"home.openLeaderboard": "leaderboard",
 								"home.openCommunityGoal": "communityGoal",
 								"home.openSubmitData": "#submitData",
@@ -182,6 +192,19 @@ export const appMachine = setup({
 					states: {
 						form: {
 							on: {
+								"tab.home": {
+									target: "#app.authorized.home",
+									actions: "clearError",
+								},
+								"tab.submitData": {
+									target: "#app.authorized.submitData",
+									actions: "clearError",
+								},
+								"tab.profile": {
+									target: "#app.authorized.profile",
+									actions: "clearError",
+								},
+
 								"submit.send": [
 									{
 										guard: "isValidSubmission",
@@ -229,10 +252,24 @@ export const appMachine = setup({
 					},
 				},
 				profile: {
+					id: "profile",
 					initial: "overview",
 					states: {
 						overview: {
 							on: {
+								"tab.home": {
+									target: "#app.authorized.home",
+									actions: "clearError",
+								},
+								"tab.submitData": {
+									target: "#app.authorized.submitData",
+									actions: "clearError",
+								},
+								"tab.profile": {
+									target: "#app.authorized.profile",
+									actions: "clearError",
+								},
+
 								"profile.openAchievements": "achievements",
 								"profile.openMeasurements": "measurements",
 								"profile.openAvatars": "avatars",

@@ -1,6 +1,6 @@
 import { pool } from "../../src/config/database";
 import { auth } from "../../src/auth";
-import { createTemperatureMeasurement, CreateTemperatureMeasurementData } from "../../src/services/temperatureService";
+import { createTemperatureMeasurement } from "../../src/services/temperatureService";
 import {
 	AvatarResult,
 	ChangePasswordInput,
@@ -12,8 +12,8 @@ import {
 	SignupCredentials,
 } from "./app.types";
 import { User } from "../seed/model/user";
-import { assignAvatarToUser } from "services/avatarService";
-import { deleteMeasurement } from "services/measurementService";
+import { assignAvatarToUser } from "../../src/services/avatarService";
+import { deleteMeasurement } from "../../src/services/measurementService";
 
 const cookieToHeaders = (cookie: string) => new Headers({ cookie });
 
